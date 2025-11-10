@@ -1,0 +1,12 @@
+# 请使用 conda env create -f environment.yml 来创建环境
+name: mdms_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pyside6
+  - sqlalchemy
+  - pymysql
+  - alembic
+  - configparser
