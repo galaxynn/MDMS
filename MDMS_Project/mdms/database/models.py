@@ -16,6 +16,9 @@ class Movie(Base):
     release_date = Column(Date)
     country = Column(String(100))
     
+    test_string = Column(String(100))
+    test_date = Column(Date)
+    
     # 在这里定义其他字段...
     
     def __repr__(self):

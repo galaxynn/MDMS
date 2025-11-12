@@ -7,8 +7,6 @@ from PySide6.QtCore import QFile
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
-        # --- 以下是正确的代码 ---
         # 它的职责就是加载 UI 文件，没有其他任何逻辑
         
         ui_file_path = os.path.join(os.path.dirname(__file__), "ui/main_window.ui")
