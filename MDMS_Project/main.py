@@ -8,9 +8,9 @@ from mdms.database.session import engine
 def main():
     # 初始化数据库 (如果表不存在，则创建)
     # 在生产环境中，你会使用 Alembic 来管理数据库迁移
-    print("正在初始化数据库，创建表结构...")
-    Base.metadata.create_all(bind=engine)
-    print("数据库初始化完成。")
+    # print("正在初始化数据库，创建表结构...")
+    # Base.metadata.create_all(bind=engine)
+    # print("数据库初始化完成。")
 
     # 创建 Qt 应用实例
     app = QApplication(sys.argv)
