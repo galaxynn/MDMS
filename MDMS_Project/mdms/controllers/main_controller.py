@@ -1,9 +1,9 @@
 # mdms/controllers/main_controller.py
 
 from PySide6.QtWidgets import QMessageBox # 举例，导入可能需要的对话框
-from mdms.views.main_window import MainWindow
-from mdms.database.session import SessionLocal
-from mdms.database.models import Movie
+from ..views.main_window import MainWindow
+from ..database.session import SessionLocal
+from ..database.models import Movie
 
 class MainController:
     def __init__(self):
