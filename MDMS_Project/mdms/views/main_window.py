@@ -55,7 +55,6 @@ class MainWindow(FluentWindow):
 
         # 3. [Module 1 & 2] 管理员后台 (Admin Management)
         # 数据管理：电影录入(C)、修改(U)、删除(D)；用户管理
-        # 注意：实际开发中，应检查 user.role == 'admin' 来决定是否显示此页面
         self.adminInterface = Widget('Admin Data Management', self)
 
         # 4. 系统设置
@@ -84,7 +83,9 @@ class MainWindow(FluentWindow):
         # - 电影管理 (添加/编辑电影)
         # - 人员管理 (添加/编辑演员)
         # - 用户管理 (封禁用户)
-        self.addSubInterface(self.adminInterface, FIF.EDIT, '数据管理', NavigationItemPosition.SCROLL)
+        # 为管理员动态添加此导航项
+        if user_manager.is_logged_in and user_manager.current_user.role == 'admin':
+            self.addSubInterface(self.adminInterface, FIF.EDIT, '数据管理', NavigationItemPosition.SCROLL)
 
         # 5. 设置
         self.addSubInterface(self.settingInterface, FIF.SETTING, '设置', NavigationItemPosition.BOTTOM)
