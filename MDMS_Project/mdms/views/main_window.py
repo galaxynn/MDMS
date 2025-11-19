@@ -5,6 +5,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QFrame, QHBoxLayout, QApplication)
 from qfluentwidgets import (NavigationItemPosition, FluentWindow, SubtitleLabel,
                             setFont, PushButton, FluentIcon as FIF)
+from ..common.user_manager import user_manager
 
 # 假设 MovieInterface 包含了 列表页 和 详情页 的切换逻辑 (核心模块 Module 2 & 4)
 # 如果尚未实现，请确保该文件存在或暂时用 Widget 代替测试
@@ -44,7 +45,7 @@ class MainWindow(FluentWindow):
         # 首页：电影海报墙、搜索、点击进入详情
         self.homeInterface = MovieInterface('Movie Library', self)
 
-        # 影人浏览页：搜索导演、演员 (对应 API: GET /api/search/people)
+        # 影人浏览页：搜索导演、演员
         self.peopleInterface = Widget('People/Crew Library', self)
 
         # 2. [Module 3] 用户中心 (Review System)
