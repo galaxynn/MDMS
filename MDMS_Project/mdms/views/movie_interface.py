@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import (QFrame, QVBoxLayout, QStackedWidget)  # 引入 StackedWidget
+from PySide6.QtWidgets import (QFrame, QVBoxLayout, QStackedWidget)
 
 # 引入两个业务Widget组件
 from movie_gallery_widget import MovieGalleryWidget
