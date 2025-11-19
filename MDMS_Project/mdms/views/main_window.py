@@ -5,19 +5,8 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QFrame, QHBoxLayout, QApplication)
 from qfluentwidgets import (NavigationItemPosition, FluentWindow, SubtitleLabel,
                             setFont, PushButton, FluentIcon as FIF)
-from ..common.user_manager import user_manager
-
-# 假设 MovieInterface 包含了 列表页 和 详情页 的切换逻辑 (核心模块 Module 2 & 4)
-# 如果尚未实现，请确保该文件存在或暂时用 Widget 代替测试
-try:
-    from movie_interface import MovieInterface
-except ImportError:
-    class MovieInterface(QFrame):
-        def __init__(self, text, parent=None):
-            super().__init__(parent)
-            self.setObjectName(text.replace(' ', '-'))
-            SubtitleLabel(text, self).show()
-
+from mdms.common.user_manager import user_manager
+from mdms.views.movie_interface import MovieInterface
 
 class Widget(QFrame):
     """
@@ -55,7 +44,8 @@ class MainWindow(FluentWindow):
 
         # 3. [Module 1 & 2] 管理员后台 (Admin Management)
         # 数据管理：电影录入(C)、修改(U)、删除(D)；用户管理
-        self.adminInterface = Widget('Admin Data Management', self)
+        if user_manager.is_logged_in and user_manager.current_user.role == 'admin':
+            self.adminInterface = Widget('Admin Data Management', self)
 
         # 4. 系统设置
         self.settingInterface = Widget('Settings', self)

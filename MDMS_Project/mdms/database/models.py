@@ -7,8 +7,8 @@ from sqlalchemy import (
     Index
 )
 from sqlalchemy.sql import func, desc  # 导入 desc 函数
-
 import uuid
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # 所有数据模型的基类
 Base = declarative_base()
@@ -46,6 +46,12 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(username='{self.username}', role='{self.role}')>"
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 
 class Person(Base):
