@@ -1,80 +1,37 @@
 # mdms/views/main_window.py
 import sys
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (QFrame, QHBoxLayout, QApplication,
-                               QVBoxLayout, QStackedWidget)  # 引入 StackedWidget
+from PySide6.QtWidgets import (QFrame, QHBoxLayout, QApplication)
 from qfluentwidgets import (NavigationItemPosition, FluentWindow, SubtitleLabel,
                             setFont, PushButton, FluentIcon as FIF)
 
-# 引入两个业务组件
-from movie_gallery_widget import MovieGalleryWidget
-from movie_detail_widget import MovieDetailWidget
+# 假设 MovieInterface 包含了 列表页 和 详情页 的切换逻辑 (核心模块 Module 2 & 4)
+# 如果尚未实现，请确保该文件存在或暂时用 Widget 代替测试
+try:
+    from movie_interface import MovieInterface
+except ImportError:
+    class MovieInterface(QFrame):
+        def __init__(self, text, parent=None):
+            super().__init__(parent)
+            self.setObjectName(text.replace(' ', '-'))
+            SubtitleLabel(text, self).show()
 
 
 class Widget(QFrame):
-    """ 测试用的占位组件 """
+    """
+    通用占位组件
+    用于快速生成尚未开发的页面
+    """
 
     def __init__(self, text: str, parent=None):
         super().__init__(parent=parent)
         self.label = SubtitleLabel(text, self)
         self.hBoxLayout = QHBoxLayout(self)
-        self.button = PushButton("Test Button", self)
-        self.hBoxLayout.addWidget(self.button)
         setFont(self.label, 24)
         self.label.setAlignment(Qt.AlignCenter)
         self.hBoxLayout.addWidget(self.label, 1, Qt.AlignCenter)
         self.setObjectName(text.replace(' ', '-'))
-
-
-class HomeInterface(QFrame):
-    """
-    [核心修改] Home 容器组件
-    它不直接显示内容，而是管理 '列表页' 和 '详情页' 的切换
-    """
-
-    def __init__(self, text: str, parent=None):
-        super().__init__(parent=parent)
-        self.setObjectName(text.replace(' ', '-'))
-
-        # 1. 使用堆叠布局
-        self.stackLayout = QVBoxLayout(self)
-        self.stackLayout.setContentsMargins(0, 0, 0, 0)  # 去掉边距，让子界面填满
-        self.stackedWidget = QStackedWidget(self)
-        self.stackLayout.addWidget(self.stackedWidget)
-
-        # 2. 初始化两个子界面
-        # 注意：这里传入 self 作为 parent
-        self.galleryInterface = MovieGalleryWidget("电影库", self)
-        self.detailInterface = MovieDetailWidget(self)
-
-        # 3. 添加到堆叠窗口
-        self.stackedWidget.addWidget(self.galleryInterface)  # Index 0
-        self.stackedWidget.addWidget(self.detailInterface)  # Index 1
-
-        # 4. 信号连接 (逻辑核心)
-
-        # 当列表页点击电影 -> 切换到详情页
-        # 假设 gallery 发出的信号叫 requestOpenDetail，携带 movie_id
-        self.galleryInterface.requestOpenDetail.connect(self.show_detail)
-
-        # 当详情页点击返回 -> 切换回列表页
-        # 假设 detail 发出的信号叫 backClicked
-        self.detailInterface.backClicked.connect(self.show_gallery)
-
-    @Slot(int)
-    def show_detail(self, movie_id):
-        """ 切换到详情页 """
-        print(f"跳转详情页 ID: {movie_id}")
-        # 调用详情页的数据加载方法
-        self.detailInterface.set_movie(movie_id)
-        # 切换 Stack 下标
-        self.stackedWidget.setCurrentIndex(1)
-
-    @Slot()
-    def show_gallery(self):
-        """ 切换回列表页 """
-        self.stackedWidget.setCurrentIndex(0)
 
 
 class MainWindow(FluentWindow):
@@ -83,40 +40,58 @@ class MainWindow(FluentWindow):
     def __init__(self):
         super().__init__()
 
-        # 1. 创建子界面
+        # 1. [Module 2 & 4] 电影核心浏览 (Core Database & Display)
+        # 首页：电影海报墙、搜索、点击进入详情
+        self.homeInterface = MovieInterface('Movie Library', self)
 
-        # [修改] 这里不再直接实例化 MovieGalleryWidget，而是实例化我们的容器 HomeInterface
-        self.homeInterface = HomeInterface('Home Interface', self)
+        # 影人浏览页：搜索导演、演员 (对应 API: GET /api/search/people)
+        self.peopleInterface = Widget('People/Crew Library', self)
 
-        # 其他子界面保持不变
-        self.musicInterface = Widget('Music Interface', self)
-        self.videoInterface = Widget('Video Interface', self)
-        self.settingInterface = Widget('Setting Interface', self)
-        self.albumInterface = Widget('Album Interface', self)
-        self.albumInterface1 = Widget('Album Interface 1', self)
+        # 2. [Module 3] 用户中心 (Review System)
+        # 我的影评：用户查看、修改、删除自己发布的评论
+        # 未来功能：列出当前用户的所有 Review，点击可修改
+        self.myReviewInterface = Widget('My Reviews', self)
+
+        # 3. [Module 1 & 2] 管理员后台 (Admin Management)
+        # 数据管理：电影录入(C)、修改(U)、删除(D)；用户管理
+        # 注意：实际开发中，应检查 user.role == 'admin' 来决定是否显示此页面
+        self.adminInterface = Widget('Admin Data Management', self)
+
+        # 4. 系统设置
+        self.settingInterface = Widget('Settings', self)
 
         self.initNavigation()
         self.initWindow()
 
     def initNavigation(self):
-        # 添加 Home 界面
-        self.addSubInterface(self.homeInterface, FIF.HOME, 'Home')
+        # --- 顶部导航 (普通用户常用) ---
 
-        self.addSubInterface(self.musicInterface, FIF.MUSIC, 'Music library')
-        self.addSubInterface(self.videoInterface, FIF.VIDEO, 'Video library')
+        # 1. 首页 (浏览电影)
+        self.addSubInterface(self.homeInterface, FIF.HOME, '电影库')
+
+        # 2. 演职人员 (浏览导演/演员)
+        self.addSubInterface(self.peopleInterface, FIF.PEOPLE, '演职人员')
+
+        # 3. 我的影评 (用户个人数据)
+        self.addSubInterface(self.myReviewInterface, FIF.CHAT, '我的影评')
 
         self.navigationInterface.addSeparator()
 
-        self.addSubInterface(self.albumInterface, FIF.ALBUM, 'Albums', NavigationItemPosition.SCROLL)
-        self.addSubInterface(self.albumInterface1, FIF.ALBUM, 'Album 1', parent=self.albumInterface)
+        # --- 滚动/底部导航 (管理与设置) ---
+        # 4. 管理后台 (建议只对管理员显示)
+        # 功能包含：
+        # - 电影管理 (添加/编辑电影)
+        # - 人员管理 (添加/编辑演员)
+        # - 用户管理 (封禁用户)
+        self.addSubInterface(self.adminInterface, FIF.EDIT, '数据管理', NavigationItemPosition.SCROLL)
 
-        self.addSubInterface(self.settingInterface, FIF.SETTING, 'Settings', NavigationItemPosition.BOTTOM)
+        # 5. 设置
+        self.addSubInterface(self.settingInterface, FIF.SETTING, '设置', NavigationItemPosition.BOTTOM)
 
     def initWindow(self):
-        self.resize(900, 700)
-        # 确保资源文件已编译或路径正确
+        self.resize(1000, 700)  # 稍微宽一点以容纳详情
         self.setWindowIcon(QIcon(':/qfluentwidgets/images/logo.png'))
-        self.setWindowTitle('电影资料库管理系统')
+        self.setWindowTitle('电影资料库管理系统 (MDMS)')
 
 
 if __name__ == '__main__':
