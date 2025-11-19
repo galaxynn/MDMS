@@ -7,6 +7,7 @@ from qfluentwidgets import (NavigationItemPosition, FluentWindow, SubtitleLabel,
                             setFont, PushButton, FluentIcon as FIF)
 from mdms.common.user_manager import user_manager
 from mdms.views.movie_interface import MovieInterface
+from mdms.views.my_review_interface import MyReviewInterface
 
 class Widget(QFrame):
     """
@@ -35,15 +36,16 @@ class MainWindow(FluentWindow):
         self.homeInterface = MovieInterface('Movie Library', self)
 
         # 影人浏览页：搜索导演、演员
-        self.peopleInterface = Widget('People/Crew Library', self)
+        self.peopleInterface = Widget('People Library', self)
 
         # 2. [Module 3] 用户中心 (Review System)
         # 我的影评：用户查看、修改、删除自己发布的评论
         # 未来功能：列出当前用户的所有 Review，点击可修改
-        self.myReviewInterface = Widget('My Reviews', self)
+        self.myReviewInterface = MyReviewInterface('My Reviews', self)
 
         # 3. [Module 1 & 2] 管理员后台 (Admin Management)
         # 数据管理：电影录入(C)、修改(U)、删除(D)；用户管理
+        self.adminInterface = None
         if user_manager.is_logged_in and user_manager.current_user.role == 'admin':
             self.adminInterface = Widget('Admin Data Management', self)
 
