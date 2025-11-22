@@ -61,11 +61,10 @@ class LoginWindow(Window, Ui_Form):
 
         desktop = QApplication.screens()[0].availableGeometry()
         w, h = desktop.width(), desktop.height()
-        self.move(w//2 - self.width()//2, h//2 - self.height()//2)
+        self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
 
         self.login_button.clicked.connect(self.on_clicked_login)
         self.register_button.clicked.connect(self.show_register_dialog)
-
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
@@ -87,6 +86,11 @@ class LoginWindow(Window, Ui_Form):
         with SessionLocal() as session:
             user = session.query(User).filter_by(username=username).first()
             if user and user.check_password(password):
+                # 检查管理员权限
+                if self.admin_checkBox.isChecked() and user.role != 'admin':
+                    self.show_error_message("该用户账号不是管理员，无法以管理员身份登录。", InfoBarIcon.WARNING)
+                    return
+
                 # 登录成功
                 user_manager.login(user)
 
@@ -102,13 +106,13 @@ class LoginWindow(Window, Ui_Form):
 
     def show_error_message(self, message, icon):
         Flyout.create(
-            icon = icon,
-            title = '出现问题',
-            content = message,
-            target = self.login_button,
-            parent = self,
-            isClosable = True,
-            aniType = FlyoutAnimationType.PULL_UP
+            icon=icon,
+            title='出现问题',
+            content=message,
+            target=self.login_button,
+            parent=self,
+            isClosable=True,
+            aniType=FlyoutAnimationType.PULL_UP
         )
 
     def show_register_dialog(self):
@@ -124,6 +128,7 @@ class LoginWindow(Window, Ui_Form):
                 isClosable=True,
                 aniType=FlyoutAnimationType.PULL_UP
             )
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

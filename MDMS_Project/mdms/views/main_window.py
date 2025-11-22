@@ -8,6 +8,9 @@ from qfluentwidgets import (NavigationItemPosition, FluentWindow, SubtitleLabel,
 from mdms.common.user_manager import user_manager
 from mdms.views.movie_interface import MovieInterface
 from mdms.views.my_review_interface import MyReviewInterface
+# 新增导入
+from mdms.views.setting_interface import SettingInterface
+
 
 class Widget(QFrame):
     """
@@ -49,8 +52,10 @@ class MainWindow(FluentWindow):
         if user_manager.is_logged_in and user_manager.current_user.role == 'admin':
             self.adminInterface = Widget('Admin Data Management', self)
 
-        # 4. 系统设置
-        self.settingInterface = Widget('Settings', self)
+        # 4. 系统设置 - 替换为真正的设置界面
+        self.settingInterface = SettingInterface('Settings', self)
+        # 连接退出登录信号
+        self.settingInterface.logoutRequested.connect(self.handle_logout)
 
         self.initNavigation()
         self.initWindow()
@@ -86,6 +91,16 @@ class MainWindow(FluentWindow):
         self.resize(1000, 700)  # 稍微宽一点以容纳详情
         self.setWindowIcon(QIcon(':/qfluentwidgets/images/logo.png'))
         self.setWindowTitle('电影资料库管理系统 (MDMS)')
+
+    def handle_logout(self):
+        """处理退出登录"""
+        # 关闭主窗口
+        self.close()
+
+        # 重新显示登录窗口
+        from mdms.views.login.login_window import LoginWindow
+        self.login_window = LoginWindow()
+        self.login_window.show()
 
 
 if __name__ == '__main__':

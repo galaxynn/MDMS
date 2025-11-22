@@ -2,7 +2,7 @@ import re
 from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtCore import Qt
 from qfluentwidgets import (MessageBoxBase, SubtitleLabel, LineEdit, PasswordLineEdit,
-                            BodyLabel, InfoBarIcon, Flyout, FlyoutAnimationType)
+                            BodyLabel, InfoBarIcon, Flyout, FlyoutAnimationType, ComboBox)
 from mdms.database.models import User
 from mdms.database.session import SessionLocal
 
@@ -19,7 +19,7 @@ class RegisterDialog(MessageBoxBase):
         self.usernameLineEdit.setPlaceholderText('请输入用户名')
         self.usernameLineEdit.setClearButtonEnabled(True)
 
-        # --- 新增：邮箱 ---
+        # --- 邮箱 ---
         self.emailLineEdit = LineEdit(self)
         self.emailLineEdit.setPlaceholderText('请输入电子邮箱')
         self.emailLineEdit.setClearButtonEnabled(True)
@@ -30,6 +30,12 @@ class RegisterDialog(MessageBoxBase):
 
         self.confirmPasswordLineEdit = PasswordLineEdit(self)
         self.confirmPasswordLineEdit.setPlaceholderText('确认密码')
+
+        # --- 用户角色选择 ---
+        self.roleComboBox = ComboBox(self)
+        self.roleComboBox.addItems(['普通用户', '管理员'])
+        self.roleComboBox.setCurrentIndex(0)  # 默认选择普通用户
+        self.roleComboBox.setToolTip('选择用户角色')
 
         # --- 布局设置 ---
         self.viewLayout.addWidget(self.titleLabel)
@@ -47,6 +53,10 @@ class RegisterDialog(MessageBoxBase):
         self.viewLayout.addWidget(BodyLabel("确认密码"))
         self.viewLayout.addWidget(self.confirmPasswordLineEdit)
 
+        # 添加角色选择到布局
+        self.viewLayout.addWidget(BodyLabel("用户角色"))
+        self.viewLayout.addWidget(self.roleComboBox)
+
         # 设置按钮文字
         self.yesButton.setText('注册')
         self.cancelButton.setText('取消')
@@ -54,7 +64,7 @@ class RegisterDialog(MessageBoxBase):
         # 设置最小宽度
         self.widget.setMinimumWidth(350)
 
-        # 绑定输入回车事件到“注册”按钮的点击事件
+        # 绑定输入回车事件到"注册"按钮的点击事件
         self.confirmPasswordLineEdit.returnPressed.connect(self.yesButton.click)
         self.passwordLineEdit.returnPressed.connect(self.yesButton.click)
         self.emailLineEdit.returnPressed.connect(self.yesButton.click)
@@ -65,6 +75,7 @@ class RegisterDialog(MessageBoxBase):
         email = self.emailLineEdit.text().strip()  # 获取邮箱
         password = self.passwordLineEdit.text().strip()
         confirm_pass = self.confirmPasswordLineEdit.text().strip()
+        role = 'admin' if self.roleComboBox.currentText() == '管理员' else 'user'  # 获取角色
 
         # 1. 基础非空验证 (增加了 email)
         if not username or not password or not email:
@@ -96,10 +107,11 @@ class RegisterDialog(MessageBoxBase):
                 return False
 
             try:
-                # 创建新用户 (传入 email)
+                # 创建新用户 (传入 email 和 role)
                 new_user = User(
                     username=username,
-                    email=email
+                    email=email,
+                    role=role  # 设置用户角色
                 )
                 new_user.set_password(password)
 
