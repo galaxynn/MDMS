@@ -91,14 +91,19 @@ class LoginWindow(Window, Ui_Form):
                     self.show_error_message("该用户账号不是管理员，无法以管理员身份登录。", InfoBarIcon.WARNING)
                     return
 
+                # 确定会话角色
+                # 如果是管理员账号但没有勾选管理员登录，则以普通用户身份登录
+                session_role = user.role
+                if user.role == 'admin' and not self.admin_checkBox.isChecked():
+                    session_role = 'user'
+
                 # 登录成功
-                user_manager.login(user)
+                user_manager.login(user, session_role)
 
                 # 发射信号通知外部
                 self.loginSuccess.emit()
 
-                # 关闭登录窗口
-                self.close()
+                # 注意：这里不再关闭窗口，由应用程序控制器处理
             else:
                 # 显示错误信息
                 self.show_error_message("用户名或密码错误，请重试。", InfoBarIcon.ERROR)

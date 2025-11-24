@@ -1,6 +1,5 @@
-# mdms/views/main_window.py
 import sys
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QFrame, QHBoxLayout, QApplication)
 from qfluentwidgets import (NavigationItemPosition, FluentWindow, SubtitleLabel,
@@ -8,7 +7,7 @@ from qfluentwidgets import (NavigationItemPosition, FluentWindow, SubtitleLabel,
 from mdms.common.user_manager import user_manager
 from mdms.views.movie_interface import MovieInterface
 from mdms.views.my_review_interface import MyReviewInterface
-# 新增导入
+from mdms.views.admin_interface import AdminInterface
 from mdms.views.setting_interface import SettingInterface
 
 
@@ -31,6 +30,9 @@ class Widget(QFrame):
 class MainWindow(FluentWindow):
     """ 主界面 """
 
+    # 定义退出登录信号
+    logoutRequested = Signal()
+
     def __init__(self):
         super().__init__()
 
@@ -49,8 +51,9 @@ class MainWindow(FluentWindow):
         # 3. [Module 1 & 2] 管理员后台 (Admin Management)
         # 数据管理：电影录入(C)、修改(U)、删除(D)；用户管理
         self.adminInterface = None
-        if user_manager.is_logged_in and user_manager.current_user.role == 'admin':
-            self.adminInterface = Widget('Admin Data Management', self)
+        # 修改：使用会话角色而不是实际角色来判断是否显示管理员界面
+        if user_manager.is_logged_in and user_manager.session_role == 'admin':
+            self.adminInterface = AdminInterface('Admin Data Management', self)
 
         # 4. 系统设置 - 替换为真正的设置界面
         self.settingInterface = SettingInterface('Settings', self)
@@ -76,12 +79,8 @@ class MainWindow(FluentWindow):
 
         # --- 滚动/底部导航 (管理与设置) ---
         # 4. 管理后台 (建议只对管理员显示)
-        # 功能包含：
-        # - 电影管理 (添加/编辑电影)
-        # - 人员管理 (添加/编辑演员)
-        # - 用户管理 (封禁用户)
-        # 为管理员动态添加此导航项
-        if user_manager.is_logged_in and user_manager.current_user.role == 'admin':
+        # 修改：使用会话角色而不是实际角色来判断是否显示管理员界面
+        if user_manager.is_logged_in and user_manager.session_role == 'admin' and self.adminInterface:
             self.addSubInterface(self.adminInterface, FIF.EDIT, '数据管理', NavigationItemPosition.SCROLL)
 
         # 5. 设置
@@ -89,18 +88,13 @@ class MainWindow(FluentWindow):
 
     def initWindow(self):
         self.resize(1000, 700)  # 稍微宽一点以容纳详情
-        self.setWindowIcon(QIcon(':/qfluentwidgets/images/logo.png'))
+        self.setWindowIcon(QIcon(':/images/logo.png'))
         self.setWindowTitle('电影资料库管理系统 (MDMS)')
 
     def handle_logout(self):
         """处理退出登录"""
-        # 关闭主窗口
-        self.close()
-
-        # 重新显示登录窗口
-        from mdms.views.login.login_window import LoginWindow
-        self.login_window = LoginWindow()
-        self.login_window.show()
+        # 发射退出登录信号，由应用程序控制器处理窗口切换
+        self.logoutRequested.emit()
 
 
 if __name__ == '__main__':
