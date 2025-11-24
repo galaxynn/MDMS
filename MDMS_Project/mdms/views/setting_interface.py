@@ -88,7 +88,11 @@ class SettingInterface(SmoothScrollArea):
         """更新用户信息显示"""
         if user_manager.is_logged_in:
             user = user_manager.current_user
+            # 修改：使用会话角色而不是实际角色来显示
             role_display = "系统管理员" if user.role == 'admin' else "普通用户"
+            self.userInfoLabel.setText(f"当前用户: {user.username}\n用户角色: {role_display}")
+            self.logoutButton.setEnabled(True)
+
 
             # 更新 ProfileCard 的信息
             self.profileCard.setTitle(user.username)
