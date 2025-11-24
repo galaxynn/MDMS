@@ -4,11 +4,14 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QFrame, QHBoxLayout, QApplication)
 from qfluentwidgets import (NavigationItemPosition, FluentWindow, SubtitleLabel,
                             setFont, PushButton, FluentIcon as FIF)
+
 from mdms.common.user_manager import user_manager
+
 from mdms.views.movie_interface import MovieInterface
 from mdms.views.my_review_interface import MyReviewInterface
 from mdms.views.admin_interface import AdminInterface
 from mdms.views.setting_interface import SettingInterface
+from mdms.views.people_interface import PeopleInterface
 
 
 class Widget(QFrame):
@@ -36,28 +39,25 @@ class MainWindow(FluentWindow):
     def __init__(self):
         super().__init__()
 
-        # 1. [Module 2 & 4] 电影核心浏览 (Core Database & Display)
+        # 电影核心浏览
         # 首页：电影海报墙、搜索、点击进入详情
         self.homeInterface = MovieInterface('Movie Library', self)
 
         # 影人浏览页：搜索导演、演员
-        self.peopleInterface = Widget('People Library', self)
+        self.peopleInterface = PeopleInterface('People Library', self)
 
-        # 2. [Module 3] 用户中心 (Review System)
-        # 我的影评：用户查看、修改、删除自己发布的评论
-        # 未来功能：列出当前用户的所有 Review，点击可修改
+        # 用户中心
         self.myReviewInterface = MyReviewInterface('My Reviews', self)
 
-        # 3. [Module 1 & 2] 管理员后台 (Admin Management)
-        # 数据管理：电影录入(C)、修改(U)、删除(D)；用户管理
+        # 管理员后台
         self.adminInterface = None
         # 修改：使用会话角色而不是实际角色来判断是否显示管理员界面
         if user_manager.is_logged_in and user_manager.session_role == 'admin':
             self.adminInterface = AdminInterface('Admin Data Management', self)
 
-        # 4. 系统设置 - 替换为真正的设置界面
+        # 系统设置
         self.settingInterface = SettingInterface('Settings', self)
-        # 连接退出登录信号
+
         self.settingInterface.logoutRequested.connect(self.handle_logout)
 
         self.initNavigation()
@@ -66,13 +66,13 @@ class MainWindow(FluentWindow):
     def initNavigation(self):
         # --- 顶部导航 (普通用户常用) ---
 
-        # 1. 首页 (浏览电影)
+        # 首页 (浏览电影)
         self.addSubInterface(self.homeInterface, FIF.HOME, '电影库')
 
-        # 2. 演职人员 (浏览导演/演员)
+        # 演职人员 (浏览导演/演员)
         self.addSubInterface(self.peopleInterface, FIF.PEOPLE, '演职人员')
 
-        # 3. 我的影评 (用户个人数据)
+        # 我的影评 (用户个人数据)
         self.addSubInterface(self.myReviewInterface, FIF.CHAT, '我的影评')
 
         self.navigationInterface.addSeparator()
