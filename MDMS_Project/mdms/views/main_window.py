@@ -9,7 +9,7 @@ from mdms.common.user_manager import user_manager
 
 from mdms.views.movie_interface import MovieInterface
 from mdms.views.my_review_interface import MyReviewInterface
-from mdms.views.admin_interface import AdminInterface
+from mdms.views.admin.admin_interface import AdminInterface
 from mdms.views.setting_interface import SettingInterface
 from mdms.views.people_interface import PeopleInterface
 
