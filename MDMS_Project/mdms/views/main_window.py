@@ -1,33 +1,16 @@
 import sys
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (QFrame, QHBoxLayout, QApplication)
-from qfluentwidgets import (NavigationItemPosition, FluentWindow, SubtitleLabel,
-                            setFont, PushButton, FluentIcon as FIF)
+from PySide6.QtWidgets import (QApplication)
+from qfluentwidgets import (NavigationItemPosition, FluentWindow, FluentIcon as FIF)
 
 from mdms.common.user_manager import user_manager
-
-from mdms.views.movie_interface import MovieInterface
-from mdms.views.my_review_interface import MyReviewInterface
 from mdms.views.admin.admin_interface import AdminInterface
-from mdms.views.setting_interface import SettingInterface
-from mdms.views.people_interface import PeopleInterface
-
-
-class Widget(QFrame):
-    """
-    通用占位组件
-    用于快速生成尚未开发的页面
-    """
-
-    def __init__(self, text: str, parent=None):
-        super().__init__(parent=parent)
-        self.label = SubtitleLabel(text, self)
-        self.hBoxLayout = QHBoxLayout(self)
-        setFont(self.label, 24)
-        self.label.setAlignment(Qt.AlignCenter)
-        self.hBoxLayout.addWidget(self.label, 1, Qt.AlignCenter)
-        self.setObjectName(text.replace(' ', '-'))
+from mdms.views.movie.movie_interface import MovieInterface
+from mdms.views.my_review.my_review_interface import MyReviewInterface
+from mdms.views.people.people_interface import PeopleInterface
+from mdms.views.setting.setting_interface import SettingInterface
 
 
 class MainWindow(FluentWindow):
@@ -36,12 +19,14 @@ class MainWindow(FluentWindow):
     # 定义退出登录信号
     logoutRequested = Signal()
 
-    def __init__(self):
+    def __init__(self, test_mode=False):
         super().__init__()
 
+        # 测试标志，用于强制显示管理员界面
+        self.test_mode = test_mode
+
         # 电影核心浏览
-        # 首页：电影海报墙、搜索、点击进入详情
-        self.homeInterface = MovieInterface('Movie Library', self)
+        self.MovieInterface = MovieInterface('Movie Library', self)
 
         # 影人浏览页：搜索导演、演员
         self.peopleInterface = PeopleInterface('People Library', self)
@@ -51,23 +36,21 @@ class MainWindow(FluentWindow):
 
         # 管理员后台
         self.adminInterface = None
-        # 修改：使用会话角色而不是实际角色来判断是否显示管理员界面
-        if user_manager.is_logged_in and user_manager.session_role == 'admin':
+        if (user_manager.is_logged_in and user_manager.session_role == 'admin') or self.test_mode:
             self.adminInterface = AdminInterface('Admin Data Management', self)
 
         # 系统设置
         self.settingInterface = SettingInterface('Settings', self)
-
         self.settingInterface.logoutRequested.connect(self.handle_logout)
 
         self.initNavigation()
         self.initWindow()
 
     def initNavigation(self):
-        # --- 顶部导航 (普通用户常用) ---
+        """初始化导航栏"""
 
         # 首页 (浏览电影)
-        self.addSubInterface(self.homeInterface, FIF.HOME, '电影库')
+        self.addSubInterface(self.MovieInterface, FIF.HOME, '电影库')
 
         # 演职人员 (浏览导演/演员)
         self.addSubInterface(self.peopleInterface, FIF.PEOPLE, '演职人员')
@@ -77,18 +60,18 @@ class MainWindow(FluentWindow):
 
         self.navigationInterface.addSeparator()
 
-        # --- 滚动/底部导航 (管理与设置) ---
-        # 4. 管理后台 (建议只对管理员显示)
+        # 管理后台 (建议只对管理员显示)
         # 修改：使用会话角色而不是实际角色来判断是否显示管理员界面
-        if user_manager.is_logged_in and user_manager.session_role == 'admin' and self.adminInterface:
+        if (user_manager.is_logged_in and user_manager.session_role == 'admin' and self.adminInterface) or self.test_mode:
             self.addSubInterface(self.adminInterface, FIF.EDIT, '数据管理', NavigationItemPosition.SCROLL)
 
-        # 5. 设置
+        # 设置
         self.addSubInterface(self.settingInterface, FIF.SETTING, '设置', NavigationItemPosition.BOTTOM)
 
     def initWindow(self):
+        """初始化窗口属性"""
         self.resize(1000, 700)  # 稍微宽一点以容纳详情
-        self.setWindowIcon(QIcon(':/images/logo.png'))
+        self.setWindowIcon(QIcon(":/qfluentwidgets/images/logo.png"))
         self.setWindowTitle('电影资料库管理系统 (MDMS)')
 
     def handle_logout(self):
@@ -97,10 +80,11 @@ class MainWindow(FluentWindow):
         self.logoutRequested.emit()
 
 
+
 if __name__ == '__main__':
     # 开启高分屏支持
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QApplication(sys.argv)
-    w = MainWindow()
+    w = MainWindow(test_mode=True)
     w.show()
     app.exec()

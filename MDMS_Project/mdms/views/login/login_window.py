@@ -1,14 +1,15 @@
 import sys
 
-from PySide6.QtCore import Qt, QTranslator, QLocale, QRect, Signal
+from PySide6.QtCore import Qt, QLocale, QRect, Signal
 from PySide6.QtGui import QIcon, QPixmap, QColor
 from PySide6.QtWidgets import QApplication
-from qfluentwidgets import setThemeColor, FluentTranslator, setTheme, Theme, SplitTitleBar, isDarkTheme, Flyout, \
-    InfoBarIcon, FlyoutAnimationType, HyperlinkButton
-from mdms.views.login.Ui_LoginWindow import Ui_Form
+from qfluentwidgets import setThemeColor, FluentTranslator, SplitTitleBar, isDarkTheme, Flyout, \
+    InfoBarIcon, FlyoutAnimationType
+
 from mdms.common.user_manager import user_manager
 from mdms.database.models import User
 from mdms.database.session import SessionLocal
+from mdms.views.login.Ui_LoginWindow import Ui_Form
 from mdms.views.login.register_dialog import RegisterDialog
 
 

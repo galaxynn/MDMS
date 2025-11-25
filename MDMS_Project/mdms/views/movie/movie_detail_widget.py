@@ -1,22 +1,19 @@
 import os
+
 from PySide6.QtCore import Qt, Signal, Slot
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFrame,
-                               QSpacerItem, QSizePolicy)
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFrame)
 from qfluentwidgets import (ImageLabel, DisplayLabel, StrongBodyLabel, BodyLabel,
                             PushButton, FluentIcon, ScrollArea, CardWidget,
                             IconWidget, PrimaryPushButton, MessageBoxBase,
                             Slider, TextEdit, InfoBar, InfoBarPosition, CaptionLabel)
 
-# --- 引入项目模块 ---
-from mdms.database.session import SessionLocal
-from mdms.database.models import Movie, Review, MoviePerson, Genre
-from mdms.common.user_manager import user_manager
 from mdms.common.review_manager import review_manager
+from mdms.common.user_manager import user_manager
+from mdms.database.models import Movie, Review
+from mdms.database.session import SessionLocal
 
 
-# =============================================================================
 # 1. 辅助组件：添加评论弹窗
-# =============================================================================
 class AddReviewDialog(MessageBoxBase):
     """ 用户添加评论的弹窗 """
 
@@ -54,9 +51,8 @@ class AddReviewDialog(MessageBoxBase):
         return self.ratingSlider.value(), self.contentEdit.toPlainText().strip()
 
 
-# =============================================================================
+
 # 2. 辅助组件：单条评论卡片
-# =============================================================================
 class ReviewCard(CardWidget):
     """ 展示单条评论的卡片 """
 
@@ -98,9 +94,8 @@ class ReviewCard(CardWidget):
         layout.addWidget(content_label)
 
 
-# =============================================================================
+
 # 3. 核心组件：电影详情页
-# =============================================================================
 class MovieDetailWidget(QWidget):
     backClicked = Signal()
 

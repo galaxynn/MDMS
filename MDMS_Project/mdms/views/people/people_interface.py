@@ -2,13 +2,12 @@ from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (QFrame, QVBoxLayout, QStackedWidget)
 
 # 引入业务组件
-from mdms.views.people_gallery_widget import PeopleGalleryWidget
-from mdms.views.people_detail_widget import PeopleDetailWidget
+from mdms.views.people.people_gallery_widget import PeopleGalleryWidget
+from mdms.views.people.people_detail_widget import PeopleDetailWidget
 
 
 class PeopleInterface(QFrame):
     """
-    [演职人员] 模块核心容器
     管理 '人员列表页' 和 '人员详情页' 的切换
     """
 
