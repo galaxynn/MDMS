@@ -1,14 +1,13 @@
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (QFrame, QVBoxLayout, QStackedWidget)
 
 # 引入两个业务Widget组件
-from mdms.views.movie_gallery_widget import MovieGalleryWidget
-from mdms.views.movie_detail_widget import MovieDetailWidget
+from mdms.views.movie.movie_gallery_widget import MovieGalleryWidget
+from mdms.views.movie.movie_detail_widget import MovieDetailWidget
 
 class MovieInterface(QFrame):
     """
-    [核心修改] Home 容器组件
-    它不直接显示内容，而是管理 '列表页' 和 '详情页' 的切换
+    不直接显示内容，而是管理 '列表页' 和 '详情页' 的切换
     """
 
     def __init__(self, text: str, parent=None):

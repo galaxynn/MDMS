@@ -1,18 +1,17 @@
-import datetime
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (QFrame, QVBoxLayout, QHeaderView, QWidget, QHBoxLayout,
                                QTableWidgetItem)
-from qfluentwidgets import (SubtitleLabel, TableWidget, PrimaryPushButton,
-                            TransparentToolButton, FluentIcon, MessageBox,
+from qfluentwidgets import (SubtitleLabel, TableWidget, TransparentToolButton, FluentIcon, MessageBox,
                             MessageBoxBase, Slider, TextEdit, StrongBodyLabel,
                             BodyLabel)
 
-from mdms.common.user_manager import user_manager
-from mdms.database.session import SessionLocal
-from mdms.database.models import Review, Movie
 from mdms.common.review_manager import review_manager
+from mdms.common.user_manager import user_manager
+from mdms.database.models import Review
+from mdms.database.session import SessionLocal
 
-# --- 编辑评论的弹窗类 ---
+
+# 编辑评论的弹窗类
 class EditReviewDialog(MessageBoxBase):
     """ 编辑评论的弹窗 """
 
@@ -48,7 +47,7 @@ class EditReviewDialog(MessageBoxBase):
         return self.ratingSlider.value(), self.contentEdit.toPlainText()
 
 
-# --- 主界面类 ---
+# 主界面类
 class MyReviewInterface(QFrame):
     def __init__(self, text: str, parent=None):
         super().__init__(parent=parent)

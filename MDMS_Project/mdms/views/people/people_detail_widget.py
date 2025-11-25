@@ -1,24 +1,21 @@
 import os
+
 from PySide6.QtCore import Qt, Signal, QSize
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFrame,
-                               QSpacerItem, QSizePolicy, QGraphicsDropShadowEffect)
 from PySide6.QtGui import QColor
-
-# 引入更多美化组件
-from qfluentwidgets import (ImageLabel, DisplayLabel, StrongBodyLabel, BodyLabel,
-                            PushButton, FluentIcon, SmoothScrollArea, CardWidget,
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFrame,
+                               QGraphicsDropShadowEffect)
+from qfluentwidgets import (ImageLabel, StrongBodyLabel, BodyLabel,
+                            FluentIcon, SmoothScrollArea, CardWidget,
                             IconWidget, CaptionLabel, LargeTitleLabel, SubtitleLabel,
-                            TitleLabel, TransparentToolButton, InfoBadge,
-                            FluentThemeColor, themeColor)
+                            TitleLabel, TransparentToolButton, themeColor)
 
-from mdms.database.session import SessionLocal
 from mdms.database.models import Person
+from mdms.database.session import SessionLocal
 
 
 class FilmographyCard(CardWidget):
     """
-    作品表卡片 - 美化版
-    增加阴影、优化字体层级、使用 Tag 样式展示年份
+    作品表卡片
     """
 
     def __init__(self, title, role, year, poster_url, parent=None):

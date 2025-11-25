@@ -1,13 +1,13 @@
-import sys
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QFrame, QVBoxLayout, QApplication, QWidget,
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (QFrame, QVBoxLayout, QWidget,
                                QHBoxLayout)
 from qfluentwidgets import (ElevatedCardWidget, ImageLabel, CaptionLabel,
                             SubtitleLabel, setFont, FlowLayout, ScrollArea, SmoothMode,
                             SearchLineEdit)
 
-from mdms.database.session import SessionLocal
 from mdms.database.models import Person
+from mdms.database.session import SessionLocal
 
 
 class PersonCard(ElevatedCardWidget):

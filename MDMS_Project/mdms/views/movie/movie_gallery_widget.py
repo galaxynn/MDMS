@@ -1,23 +1,14 @@
 import sys
-import os
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (QFrame, QVBoxLayout, QApplication, QWidget,
                                QHBoxLayout)
 from qfluentwidgets import (ElevatedCardWidget, ImageLabel, CaptionLabel,
                             SubtitleLabel, setFont, FlowLayout, ScrollArea, SmoothMode,
                             SearchLineEdit)
+from mdms.database.session import SessionLocal
+from mdms.database.models import Movie
 
-# --- 1. 引入数据库相关模块 ---
-# 假设此文件位于 mdms/views/ 目录下，根据你的项目结构调整 import
-try:
-    from mdms.database.session import SessionLocal
-    from mdms.database.models import Movie
-except ImportError:
-    # 用于防止直接运行此脚本时找不到模块的报错提示
-    print("ImportError: 请确保在项目根目录下运行，或者调整 PYTHONPATH")
-    # 为了演示代码不崩溃，定义空对象（实际运行时请确保导入正确）
-    SessionLocal = None
-    Movie = None
 
 
 class MovieCard(ElevatedCardWidget):
