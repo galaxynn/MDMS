@@ -89,10 +89,7 @@ class SettingInterface(SmoothScrollArea):
         if user_manager.is_logged_in:
             user = user_manager.current_user
             # 修改：使用会话角色而不是实际角色来显示
-            role_display = "系统管理员" if user.role == 'admin' else "普通用户"
-            self.userInfoLabel.setText(f"当前用户: {user.username}\n用户角色: {role_display}")
-            self.logoutButton.setEnabled(True)
-
+            role_display = "系统管理员" if user_manager.session_role == 'admin' else "普通用户"
 
             # 更新 ProfileCard 的信息
             self.profileCard.setTitle(user.username)
@@ -100,8 +97,6 @@ class SettingInterface(SmoothScrollArea):
 
             # 设置为可用状态
             self.logoutCard.setEnabled(True)
-
-            # --- 修正点：通过 .button 访问内部按钮 ---
             self.logoutCard.button.setText("退出登录")
         else:
             self.profileCard.setTitle("未登录")
@@ -109,8 +104,6 @@ class SettingInterface(SmoothScrollArea):
 
             # 设置为禁用状态
             self.logoutCard.setEnabled(False)
-
-            # --- 修正点：通过 .button 访问内部按钮 ---
             self.logoutCard.button.setText("需登录")
 
     def on_logout_clicked(self):
