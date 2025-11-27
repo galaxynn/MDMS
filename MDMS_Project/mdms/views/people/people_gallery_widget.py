@@ -108,6 +108,10 @@ class PeopleGalleryWidget(QFrame):
 
         # === 滚动区域 ===
         self.scrollArea = ScrollArea(self)
+
+        # [关键修复] 强制垂直滚动条始终显示，防止布局抖动
+        self.scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+
         self.scrollArea.setSmoothMode(SmoothMode.NO_SMOOTH, Qt.Orientation.Vertical)
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setFrameShape(QFrame.NoFrame)
@@ -126,7 +130,7 @@ class PeopleGalleryWidget(QFrame):
 
         # === 底部：集成自定义分页器 ===
         self.paginator = FluentPaginator(self)
-        self.paginator.set_page_size(18)  # 同样设置为每页18个
+        self.paginator.set_page_size(20)  # 设置为每页20个
         self.paginator.pageChanged.connect(self.load_data)  # 连接翻页信号
 
         self.mainLayout.addWidget(self.paginator, 0, Qt.AlignBottom)
@@ -171,11 +175,17 @@ class PeopleGalleryWidget(QFrame):
     def update_gallery(self, people):
         """ 刷新界面卡片 """
         # 清空现有卡片
+        # [修复] 兼容 takeAt 返回 Widget 或 QLayoutItem 的情况
         while self.flowLayout.count():
             item = self.flowLayout.takeAt(0)
-            widget = item.widget()
+
+            # 如果 item 有 .widget() 方法（它是 QLayoutItem），则调用它获取 widget
+            # 否则（它是 PersonCard 实例），直接把它当作 widget
+            widget = item.widget() if hasattr(item, 'widget') else item
+
             if widget:
                 widget.deleteLater()
+
         self.cards.clear()
 
         # 生成新卡片

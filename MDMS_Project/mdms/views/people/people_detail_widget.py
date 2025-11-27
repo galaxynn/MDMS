@@ -20,16 +20,17 @@ class FilmographyCard(CardWidget):
 
     def __init__(self, title, role, year, poster_url, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(90)  # 稍微增高一点
+        self.setFixedHeight(90)  # 固定卡片高度
         self.setCursor(Qt.PointingHandCursor)  # 鼠标悬停变为手型
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(12, 10, 20, 10)  # 调整内部边距
         layout.setSpacing(16)
 
-        # 1. 电影海报 (带圆角)
+        # 1. 电影海报 (带圆角，固定尺寸)
+        # 这里固定尺寸为 52x70，比例约为 0.74，适合海报展示
         self.poster = ImageLabel(poster_url if poster_url else ":/qfluentwidgets/images/logo.png", self)
-        self.poster.setFixedSize(52, 70)  # 稍微调大图片
+        self.poster.setFixedSize(52, 70)
         self.poster.setBorderRadius(6, 6, 6, 6)
         self.poster.setScaledContents(True)
 
@@ -41,18 +42,15 @@ class FilmographyCard(CardWidget):
         # 标题使用 TitleLabel (更突出)
         self.titleLabel = TitleLabel(title, self)
 
-        # 角色使用 CaptionLabel (灰色辅助文字)
-        # 使用 HTML 增加一点颜色区分
-        role_text = f"担任 <span style='color:{themeColor().name()}; font-weight:bold;'>{role}</span>"
+        # 角色使用 BodyLabel (辅助文字)
         self.roleLabel = BodyLabel(self)
         self.roleLabel.setText(f"担任: {role}")
-        self.roleLabel.setStyleSheet("color: #666666; font-size: 13px;")  # 适配暗色模式需调整颜色策略，此处简化
+        self.roleLabel.setStyleSheet("color: #666666; font-size: 13px;")
 
         info_layout.addWidget(self.titleLabel)
         info_layout.addWidget(self.roleLabel)
 
-        # 3. 年份 (使用类似 Badge 的效果或大字体)
-        # 这里我们用简单的强样式，靠右对齐
+        # 3. 年份 (强样式，靠右对齐)
         self.yearLabel = StrongBodyLabel(year, self)
         self.yearLabel.setStyleSheet(f"color: {themeColor().name()}; font-size: 16px;")
 
@@ -69,7 +67,7 @@ class PeopleDetailWidget(QWidget):
         super().__init__(parent)
         self.person_id = None
         self.setObjectName("PeopleDetailWidget")
-        # 设置背景色，避免透明穿透（视具体主窗口情况而定）
+        # 设置背景色为透明，避免遮挡主窗口背景
         self.setStyleSheet("PeopleDetailWidget{background-color: transparent;}")
 
         # --- 主布局 ---
@@ -77,16 +75,14 @@ class PeopleDetailWidget(QWidget):
         self.mainLayout.setContentsMargins(0, 0, 0, 0)
         self.mainLayout.setSpacing(0)
 
-        # 1. 顶部导航栏 (更加轻量化)
+        # 1. 顶部导航栏
         self.headerBar = QFrame(self)
         self.headerBar.setFixedHeight(50)
-        # 底部加一条细微的分割线
         self.headerBar.setStyleSheet("border-bottom: 1px solid rgba(0, 0, 0, 0.05); background-color: transparent;")
 
         self.headerLayout = QHBoxLayout(self.headerBar)
         self.headerLayout.setContentsMargins(16, 0, 16, 0)
 
-        # 使用 TransparentToolButton 显得更现代
         self.backBtn = TransparentToolButton(FluentIcon.RETURN, self)
         self.backBtn.setFixedSize(32, 32)
         self.backBtn.setIconSize(QSize(14, 14))
@@ -100,7 +96,7 @@ class PeopleDetailWidget(QWidget):
 
         self.mainLayout.addWidget(self.headerBar)
 
-        # 2. 滚动区域 (使用 SmoothScrollArea)
+        # 2. 滚动区域
         self.scrollArea = SmoothScrollArea(self)
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setFrameShape(QFrame.NoFrame)
@@ -109,7 +105,6 @@ class PeopleDetailWidget(QWidget):
 
         self.contentWidget = QWidget()
         self.contentLayout = QVBoxLayout(self.contentWidget)
-        # 增加左右边距，使页面居中感更强，如果是宽屏可以设最大宽度
         self.contentLayout.setContentsMargins(40, 30, 40, 50)
         self.contentLayout.setSpacing(30)
 
@@ -117,19 +112,19 @@ class PeopleDetailWidget(QWidget):
         self.topInfoContainer = QWidget()
         self.topInfoLayout = QHBoxLayout(self.topInfoContainer)
         self.topInfoLayout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.topInfoLayout.setSpacing(40)  # 图片和文字的间距拉大
+        self.topInfoLayout.setSpacing(40)
 
-        # A.1 照片 (增加阴影效果)
+        # A.1 照片 (带阴影和固定尺寸)
         self.photoContainer = QWidget()
         self.photoLayout = QVBoxLayout(self.photoContainer)
         self.photoLayout.setContentsMargins(0, 0, 0, 0)
 
         self.photoLabel = ImageLabel(":/qfluentwidgets/images/logo.png", self)
-        self.photoLabel.setFixedSize(200, 280)
+        self.photoLabel.setFixedSize(200, 280) # 固定人物照片大小
         self.photoLabel.setBorderRadius(12, 12, 12, 12)
         self.photoLabel.setScaledContents(True)
 
-        # 给图片加个阴影
+        # 阴影效果
         shadow = QGraphicsDropShadowEffect(self.photoLabel)
         shadow.setBlurRadius(20)
         shadow.setXOffset(0)
@@ -146,11 +141,11 @@ class PeopleDetailWidget(QWidget):
         self.detailsLayout.setAlignment(Qt.AlignTop)
         self.detailsLayout.setSpacing(8)
 
-        # 姓名 - 使用 LargeTitleLabel (非常大且醒目)
+        # 姓名
         self.nameLabel = LargeTitleLabel("Loading...", self)
         self.nameLabel.setWordWrap(True)
 
-        # Meta 信息行 (出生日期等) - 使用 Icon + Text
+        # Meta 信息行
         self.metaContainer = QWidget()
         self.metaLayout = QHBoxLayout(self.metaContainer)
         self.metaLayout.setContentsMargins(0, 0, 0, 0)
@@ -166,33 +161,29 @@ class PeopleDetailWidget(QWidget):
         self.metaLayout.addWidget(self.metaLabel)
         self.metaLayout.addStretch(1)
 
-        # 简介标题
+        # 简介
         self.bioHeader = SubtitleLabel("个人简介", self)
         self.bioHeader.setStyleSheet("margin-top: 20px;")
 
-        # 简介正文
         self.bioLabel = BodyLabel("暂无简介", self)
         self.bioLabel.setWordWrap(True)
-        self.bioLabel.setStyleSheet("color: #404040; line-height: 1.6;")  # 增加行高，易读性更好
+        self.bioLabel.setStyleSheet("color: #404040; line-height: 1.6;")
 
         self.detailsLayout.addWidget(self.nameLabel)
         self.detailsLayout.addWidget(self.metaContainer)
         self.detailsLayout.addWidget(self.bioHeader)
         self.detailsLayout.addWidget(self.bioLabel)
-        self.detailsLayout.addStretch(1)  # 顶上去
+        self.detailsLayout.addStretch(1)
 
         self.topInfoLayout.addWidget(self.detailsContainer, 1)
         self.contentLayout.addWidget(self.topInfoContainer)
 
-        # --- 分割装饰 ---
-        # 不用普通的 Line，用空白间距或者一个 CaptionLabel 分隔
         self.contentLayout.addSpacing(10)
 
-        # --- B. 影视作品 (Filmography) ---
-        # 标题区
+        # --- B. 影视作品 ---
         self.filmHeaderLayout = QHBoxLayout()
         self.filmTitle = SubtitleLabel("影视作品", self)
-        self.filmCountLabel = CaptionLabel("(0部)", self)  # 显示数量
+        self.filmCountLabel = CaptionLabel("(0部)", self)
         self.filmCountLabel.setStyleSheet("color: gray; margin-bottom: 4px;")
 
         self.filmHeaderLayout.addWidget(self.filmTitle)
@@ -203,7 +194,7 @@ class PeopleDetailWidget(QWidget):
 
         # 列表容器
         self.filmListLayout = QVBoxLayout()
-        self.filmListLayout.setSpacing(12)  # 卡片之间的间距
+        self.filmListLayout.setSpacing(12)
         self.contentLayout.addLayout(self.filmListLayout)
 
         self.scrollArea.setWidget(self.contentWidget)
@@ -214,30 +205,33 @@ class PeopleDetailWidget(QWidget):
         self.person_id = person_id
         self.scrollArea.verticalScrollBar().setValue(0)
 
-        with SessionLocal() as session:
-            try:
-                person = session.query(Person).filter(Person.person_id == person_id).first()
-                if not person:
-                    self.nameLabel.setText("未找到人员信息")
-                    return
+        session = SessionLocal()
+        try:
+            person = session.query(Person).filter(Person.person_id == person_id).first()
+            if not person:
+                self.nameLabel.setText("未找到人员信息")
+                return
 
-                # 1. 基础信息
-                self.nameLabel.setText(person.name)
-                birth = person.birthdate.strftime("%Y年%m月%d日") if person.birthdate else "未知日期"
-                self.metaLabel.setText(f"{birth}")
-                self.bioLabel.setText(person.bio if person.bio else "暂无简介。")
+            # 1. 基础信息
+            self.nameLabel.setText(person.name)
+            birth = person.birthdate.strftime("%Y年%m月%d日") if person.birthdate else "未知日期"
+            self.metaLabel.setText(f"{birth}")
+            self.bioLabel.setText(person.bio if person.bio else "暂无简介。")
 
-                if person.photo_url and os.path.exists(person.photo_url):
-                    self.photoLabel.setImage(person.photo_url)
-                else:
-                    self.photoLabel.setImage(":/qfluentwidgets/images/logo.png")
+            # 设置图片
+            if person.photo_url and os.path.exists(person.photo_url):
+                self.photoLabel.setImage(person.photo_url)
+            else:
+                self.photoLabel.setImage(":/qfluentwidgets/images/logo.png")
 
-                # 2. 加载作品列表
-                self.load_filmography(person)
+            # 2. 加载作品列表
+            self.load_filmography(person)
 
-            except Exception as e:
-                print(f"Load person details error: {e}")
-                self.nameLabel.setText("数据加载错误")
+        except Exception as e:
+            print(f"Load person details error: {e}")
+            self.nameLabel.setText("数据加载错误")
+        finally:
+            session.close()
 
     def load_filmography(self, person_obj):
         """ 加载该人员参与的电影 """
@@ -247,6 +241,7 @@ class PeopleDetailWidget(QWidget):
             if item.widget():
                 item.widget().deleteLater()
 
+        # 获取并排序关联作品 (按上映日期倒序)
         associations = person_obj.movie_associations
         associations.sort(
             key=lambda x: x.movie.release_date.strftime("%Y-%m-%d") if x.movie and x.movie.release_date else "0000",
@@ -257,7 +252,6 @@ class PeopleDetailWidget(QWidget):
         self.filmCountLabel.setText(f"({count}部)")
 
         if not associations:
-            # 使用 CardWidget 显示空状态，比单纯的 Label 好看
             empty_card = CardWidget(self)
             empty_layout = QHBoxLayout(empty_card)
             empty_icon = IconWidget(FluentIcon.INFO, self)

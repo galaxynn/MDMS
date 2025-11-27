@@ -11,7 +11,7 @@ from qfluentwidgets import (ElevatedCardWidget, ImageLabel, CaptionLabel,
 from mdms.database.session import SessionLocal
 from mdms.database.models import Movie
 
-# 导入刚才创建的分页组件
+# 导入分页组件
 from mdms.common.fluent_paginator import FluentPaginator
 
 
@@ -95,10 +95,9 @@ class MovieGalleryWidget(QFrame):
         self.searchEdit = SearchLineEdit(self)
         self.searchEdit.setPlaceholderText("搜索电影名称...")
         self.searchEdit.setFixedWidth(240)
-        # 绑定搜索事件：按下回车或点击搜索图标触发
+        # 绑定搜索事件
         self.searchEdit.searchSignal.connect(self.on_search_triggered)
         self.searchEdit.returnPressed.connect(self.on_search_triggered)
-        # 可选：清空搜索框时自动重置
         self.searchEdit.textChanged.connect(self.on_search_text_changed)
 
         self.headerLayout.addWidget(self.searchEdit)
@@ -107,6 +106,11 @@ class MovieGalleryWidget(QFrame):
 
         # === 滚动区域 ===
         self.scrollArea = ScrollArea(self)
+
+        # [关键修复] 强制垂直滚动条始终显示
+        # 这样可以锁定 Viewport 的宽度，防止因滚动条出现/消失导致 FlowLayout 重新计算位置而发生抖动
+        self.scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+
         self.scrollArea.setSmoothMode(SmoothMode.NO_SMOOTH, Qt.Orientation.Vertical)
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setFrameShape(QFrame.NoFrame)
@@ -125,19 +129,13 @@ class MovieGalleryWidget(QFrame):
 
         # === 底部：集成自定义分页器 ===
         self.paginator = FluentPaginator(self)
-        self.paginator.set_page_size(18)  # 设置每页显示18个
-        self.paginator.pageChanged.connect(self.load_data)  # 连接翻页信号
+        self.paginator.set_page_size(20)  # 设置每页显示20个
+        self.paginator.pageChanged.connect(self.load_data)
 
         self.mainLayout.addWidget(self.paginator, 0, Qt.AlignBottom)
 
     def load_data(self, page: int):
-        """
-        核心数据加载逻辑：
-        1. 根据搜索词过滤
-        2. 计算总数并更新分页器
-        3. 使用 Limit/Offset 获取当前页数据
-        4. 渲染卡片
-        """
+        """核心数据加载逻辑"""
         if SessionLocal is None:
             print("Warning: Database SessionLocal is None.")
             return
@@ -149,21 +147,14 @@ class MovieGalleryWidget(QFrame):
 
             # 1. 应用搜索过滤
             if self.current_search_text:
-                # 假设搜索标题，使用 ilike 进行不区分大小写模糊匹配
                 query = query.filter(Movie.title.ilike(f"%{self.current_search_text}%"))
 
-            # 如果有默认排序需求 (例如按发布时间倒序)
-            # query = query.order_by(Movie.release_date.desc())
-
-            # 2. 获取总数 (这对于分页器计算总页数至关重要)
+            # 2. 获取总数
             total_items = query.count()
             self.paginator.set_total_items(total_items)
-
-            # 这里的 set_current_page 主要是为了确保 UI 状态正确
-            # 例如用户在第5页搜索导致只有1页结果，UI需要跳回第1页高亮
             self.paginator.set_current_page(page)
 
-            # 3. 分页查询 (Limit Offset)
+            # 3. 分页查询
             limit = self.paginator.get_page_size()
             offset = (page - 1) * limit
             movies = query.offset(offset).limit(limit).all()
@@ -187,14 +178,17 @@ class MovieGalleryWidget(QFrame):
         # 1. 清空 FlowLayout
         while self.flowLayout.count():
             item = self.flowLayout.takeAt(0)
-            widget = item.widget()
+
+            # [兼容修复] 处理返回 Widget 或 QLayoutItem 的情况
+            widget = item.widget() if hasattr(item, 'widget') else item
+
             if widget:
                 widget.deleteLater()
+
         self.cards.clear()
 
         # 2. 创建新卡片
         if not movies:
-            # 可以添加一个 "无数据" 的提示标签
             no_data_label = CaptionLabel("未找到相关电影", self.scrollWidget)
             no_data_label.setAlignment(Qt.AlignCenter)
             self.flowLayout.addWidget(no_data_label)
@@ -215,7 +209,6 @@ class MovieGalleryWidget(QFrame):
         """当用户点击搜索或按回车时触发"""
         text = self.searchEdit.text().strip()
         self.current_search_text = text
-        # 搜索时，强制回到第一页
         self.load_data(page=1)
 
     def on_search_text_changed(self, text):
