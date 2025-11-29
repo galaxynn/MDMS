@@ -28,8 +28,8 @@ class ReviewManager:
         # 3. 刷新以获取 ID 并确保写入
         session.flush()
 
-        # 4. 触发统计更新
-        self._update_movie_stats(session, movie_id)
+        # 4. 触发统计更新 - 修复：这里调用了错误的方法名
+        self.update_movie_stats(session, movie_id)  # 原来是 self._update_movie_stats
 
         return new_review
 
