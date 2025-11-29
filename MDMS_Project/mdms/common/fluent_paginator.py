@@ -2,7 +2,8 @@ import math
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QButtonGroup
 from qfluentwidgets import (CaptionLabel, TransparentToolButton,
-                            PrimaryPushButton, FluentIcon as FIF)
+                            PrimaryPushButton, FluentIcon as FIF,
+                            TransparentPushButton)
 
 
 class FluentPaginator(QWidget):
@@ -22,7 +23,6 @@ class FluentPaginator(QWidget):
         self._page_size = 20
         self._current_page = 1
         self._total_pages = 1
-        self._max_visible_buttons = 7  # 能够显示的数字按钮最大数量
 
         # === UI 布局 ===
         self.hLayout = QHBoxLayout(self)
@@ -30,7 +30,7 @@ class FluentPaginator(QWidget):
         self.hLayout.setSpacing(5)
         self.hLayout.setAlignment(Qt.AlignCenter)
 
-        # 按钮组 (用于管理按钮状态，虽然这里主要靠重新渲染)
+        # 按钮组 (用于管理按钮状态)
         self.buttonGroup = QButtonGroup(self)
         self.buttonGroup.buttonClicked.connect(self._on_button_clicked)
 
@@ -38,10 +38,7 @@ class FluentPaginator(QWidget):
         self._update_ui()
 
     def set_total_items(self, total: int):
-        """
-        设置数据总条数。
-        通常在数据库执行 .count() 后调用此方法，组件会自动计算总页数并刷新 UI。
-        """
+        """设置数据总条数"""
         self._total_items = total
         self._calculate_pages()
         self._update_ui()
@@ -60,10 +57,7 @@ class FluentPaginator(QWidget):
         return self._current_page
 
     def set_current_page(self, page: int):
-        """
-        代码主动设置当前页 (例如搜索后重置为第1页)。
-        注意：此方法不会触发 pageChanged 信号，以避免循环调用。
-        """
+        """代码主动设置当前页 (不触发信号)"""
         if page < 1: page = 1
         if page > self._total_pages: page = self._total_pages
 
@@ -71,17 +65,16 @@ class FluentPaginator(QWidget):
         self._update_ui()
 
     def _calculate_pages(self):
-        """根据总条数和每页大小计算总页数"""
+        """计算总页数"""
         self._total_pages = math.ceil(self._total_items / self._page_size)
         if self._total_pages < 1:
             self._total_pages = 1
 
-        # 如果数据变少导致当前页码越界，自动修复
         if self._current_page > self._total_pages:
             self._current_page = 1
 
     def _on_button_clicked(self, button):
-        """处理UI点击事件"""
+        """处理点击事件"""
         val = button.property("page_num")
 
         new_page = self._current_page
@@ -93,26 +86,24 @@ class FluentPaginator(QWidget):
         elif isinstance(val, int):
             new_page = val
 
-        # 边界检查
         if new_page < 1: new_page = 1
         if new_page > self._total_pages: new_page = self._total_pages
 
-        # 只有页码真正改变时才触发信号
         if new_page != self._current_page:
             self._current_page = new_page
             self._update_ui()
             self.pageChanged.emit(new_page)
 
     def _create_page_button(self, text, page_num, is_active=False):
-        """工厂方法：创建数字按钮"""
+        """创建数字按钮"""
         if is_active:
-            # 当前页：使用实心主题色按钮
             btn = PrimaryPushButton(str(text), self)
         else:
-            # 其他页：使用透明背景按钮
-            btn = TransparentToolButton(str(text), self)
+            # 使用 TransparentPushButton 以显示数字文本
+            btn = TransparentPushButton(str(text), self)
 
-        btn.setFixedSize(32, 32)
+        # [修改] 增加宽度到 40px，以容纳两位数或三位数
+        btn.setFixedSize(40, 32)
         btn.setProperty("page_num", page_num)
 
         self.hLayout.addWidget(btn)
@@ -120,9 +111,10 @@ class FluentPaginator(QWidget):
         return btn
 
     def _create_icon_button(self, icon, page_action, enabled=True):
-        """工厂方法：创建图标按钮 (上一页/下一页)"""
+        """创建图标按钮"""
         btn = TransparentToolButton(icon, self)
-        btn.setFixedSize(32, 32)
+        # [修改] 保持与数字按钮尺寸一致
+        btn.setFixedSize(40, 32)
         btn.setProperty("page_num", page_action)
         btn.setEnabled(enabled)
 
@@ -132,10 +124,9 @@ class FluentPaginator(QWidget):
 
     def _update_ui(self):
         """
-        核心渲染逻辑：根据当前页和总页数，重绘所有按钮。
-        实现了类似于 1 ... 4 5 6 ... 10 的省略号逻辑。
+        核心渲染逻辑：重构为滑动窗口模式
         """
-        # 1. 清除旧组件
+        # 1. 清理旧组件
         for btn in self.buttonGroup.buttons():
             self.buttonGroup.removeButton(btn)
 
@@ -145,39 +136,47 @@ class FluentPaginator(QWidget):
             if widget:
                 widget.deleteLater()
 
-        # 2. 添加“上一页”按钮
+        # 2. 上一页
         self._create_icon_button(FIF.LEFT_ARROW, "prev", enabled=(self._current_page > 1))
 
-        # 3. 计算需要显示的页码集合
-        pages_to_show = set()
-        pages_to_show.add(1)  # 始终显示第一页
-        pages_to_show.add(self._total_pages)  # 始终显示最后一页
+        # 3. 计算需要显示的页码列表 (0 代表省略号)
+        page_nums = []
+        total = self._total_pages
+        curr = self._current_page
 
-        # 显示当前页的前后2页 (范围可调)
-        range_start = max(1, self._current_page - 2)
-        range_end = min(self._total_pages, self._current_page + 2)
+        # 逻辑：最多显示 7 个数字位 (不含上一页/下一页)
+        if total <= 7:
+            # 页数很少，全部显示: 1 2 3 4 5 6 7
+            page_nums = list(range(1, total + 1))
+        else:
+            if curr <= 4:
+                # 当前页靠前: 1 2 3 4 5 ... 100
+                # 显示前5个 + 省略号 + 最后一个
+                page_nums = [1, 2, 3, 4, 5, 0, total]
+            elif curr >= total - 3:
+                # 当前页靠后: 1 ... 96 97 98 99 100
+                # 显示第1个 + 省略号 + 后5个
+                page_nums = [1, 0, total - 4, total - 3, total - 2, total - 1, total]
+            else:
+                # 当前页在中间: 1 ... 4 5 6 ... 100
+                # 显示第1个 + 省略号 + 中间3个(curr-1, curr, curr+1) + 省略号 + 最后一个
+                page_nums = [1, 0, curr - 1, curr, curr + 1, 0, total]
 
-        for i in range(range_start, range_end + 1):
-            pages_to_show.add(i)
-
-        sorted_pages = sorted(list(pages_to_show))
-
-        # 4. 渲染数字按钮和省略号
-        last_num = 0
-        for page_num in sorted_pages:
-            # 如果数字不连续，插入省略号 "..."
-            if last_num != 0 and page_num - last_num > 1:
+        # 4. 渲染按钮
+        for num in page_nums:
+            if num == 0:
+                # 渲染省略号
                 dots = CaptionLabel("...", self)
                 dots.setAlignment(Qt.AlignCenter)
                 dots.setFixedWidth(20)
                 self.hLayout.addWidget(dots)
+            else:
+                # 渲染数字
+                self._create_page_button(
+                    text=num,
+                    page_num=num,
+                    is_active=(num == self._current_page)
+                )
 
-            self._create_page_button(
-                text=page_num,
-                page_num=page_num,
-                is_active=(page_num == self._current_page)
-            )
-            last_num = page_num
-
-        # 5. 添加“下一页”按钮
+        # 5. 下一页
         self._create_icon_button(FIF.RIGHT_ARROW, "next", enabled=(self._current_page < self._total_pages))
