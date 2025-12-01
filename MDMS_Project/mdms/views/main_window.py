@@ -2,8 +2,8 @@ import sys
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (QApplication)
-from qfluentwidgets import (NavigationItemPosition, FluentWindow, FluentIcon as FIF)
+from PySide6.QtWidgets import QApplication
+from qfluentwidgets import NavigationItemPosition, FluentWindow, FluentIcon as FIF
 
 from mdms.common.user_manager import user_manager
 from mdms.views.admin.admin_interface import AdminInterface
@@ -11,6 +11,8 @@ from mdms.views.movie.movie_interface import MovieInterface
 from mdms.views.my_review.my_review_interface import MyReviewInterface
 from mdms.views.people.people_interface import PeopleInterface
 from mdms.views.setting.setting_interface import SettingInterface
+# 新增导入
+from mdms.views.top100.top100_interface import Top100Interface
 
 
 class MainWindow(FluentWindow):
@@ -27,6 +29,9 @@ class MainWindow(FluentWindow):
 
         # 电影核心浏览
         self.MovieInterface = MovieInterface('Movie Library', self)
+
+        # 新增：TOP100页面
+        self.top100Interface = Top100Interface('TOP 100 Movies', self)
 
         # 影人浏览页：搜索导演、演员
         self.peopleInterface = PeopleInterface('People Library', self)
@@ -52,6 +57,9 @@ class MainWindow(FluentWindow):
         # 首页 (浏览电影)
         self.addSubInterface(self.MovieInterface, FIF.HOME, '电影库')
 
+        # 新增：TOP100页面 - 使用肯定存在的HEART图标
+        self.addSubInterface(self.top100Interface, FIF.HEART, 'TOP100')
+
         # 演职人员 (浏览导演/演员)
         self.addSubInterface(self.peopleInterface, FIF.PEOPLE, '演职人员')
 
@@ -61,7 +69,6 @@ class MainWindow(FluentWindow):
         self.navigationInterface.addSeparator()
 
         # 管理后台 (建议只对管理员显示)
-        # 修改：使用会话角色而不是实际角色来判断是否显示管理员界面
         if (user_manager.is_logged_in and user_manager.session_role == 'admin' and self.adminInterface) or self.test_mode:
             self.addSubInterface(self.adminInterface, FIF.EDIT, '数据管理', NavigationItemPosition.SCROLL)
 
@@ -78,7 +85,6 @@ class MainWindow(FluentWindow):
         """处理退出登录"""
         # 发射退出登录信号，由应用程序控制器处理窗口切换
         self.logoutRequested.emit()
-
 
 
 if __name__ == '__main__':

@@ -51,7 +51,6 @@ class AddReviewDialog(MessageBoxBase):
         return self.ratingSlider.value(), self.contentEdit.toPlainText().strip()
 
 
-
 # 2. 辅助组件：单条评论卡片
 class ReviewCard(CardWidget):
     """ 展示单条评论的卡片 """
@@ -92,7 +91,6 @@ class ReviewCard(CardWidget):
 
         layout.addLayout(top_layout)
         layout.addWidget(content_label)
-
 
 
 # 3. 核心组件：电影详情页
@@ -219,14 +217,7 @@ class MovieDetailWidget(QWidget):
 
         with SessionLocal() as session:
             try:
-
-                # 强制刷新评分
-                # 调用 Manager 重新计算该电影的评分和人数
-                review_manager.update_movie_stats(session, movie_id)
-                # 必须提交事务，否则下面的查询还是旧数据
-                session.commit()
-
-                # 查询电影数据
+                # 直接查询电影数据，使用数据库中的评分
                 movie = session.query(Movie).filter(Movie.movie_id == movie_id).first()
                 if not movie:
                     self.titleLabel.setText("未找到电影")
@@ -235,8 +226,7 @@ class MovieDetailWidget(QWidget):
                 # --- 基础信息 ---
                 self.titleLabel.setText(movie.title)
 
-
-                # 评分显示逻辑 (核心修改点)
+                # 评分显示逻辑 - 直接使用数据库中的评分
                 if movie.rating_count > 0:
                     # 有人评分：显示分数
                     self.ratingLabel.setText(f"{movie.average_rating:.1f}")

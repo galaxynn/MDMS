@@ -106,11 +106,7 @@ class MovieGalleryWidget(QFrame):
 
         # === 滚动区域 ===
         self.scrollArea = ScrollArea(self)
-
-        # [关键修复] 强制垂直滚动条始终显示
-        # 这样可以锁定 Viewport 的宽度，防止因滚动条出现/消失导致 FlowLayout 重新计算位置而发生抖动
         self.scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-
         self.scrollArea.setSmoothMode(SmoothMode.NO_SMOOTH, Qt.Orientation.Vertical)
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setFrameShape(QFrame.NoFrame)
