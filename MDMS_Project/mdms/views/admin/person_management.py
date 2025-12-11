@@ -1,12 +1,12 @@
-from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem
-from PySide6.QtWidgets import QHeaderView
+from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem, QHeaderView
 from qfluentwidgets import (
     PrimaryPushButton, TableWidget, MessageBox, InfoBar,
     InfoBarPosition
 )
 
-from mdms.database.models import Person
 from mdms.database.session import SessionLocal
+# 引入 PersonManager
+from mdms.common.person_manager import person_manager
 from mdms.views.admin.person_form_dialog import PersonFormDialog
 
 
@@ -20,7 +20,7 @@ class PersonManagementWidget(QFrame):
         self.load_people()
 
     def setup_ui(self):
-        """设置界面"""
+        """设置界面 (保持不变)"""
         layout = QVBoxLayout(self)
 
         # 按钮栏
@@ -50,21 +50,20 @@ class PersonManagementWidget(QFrame):
     def load_people(self):
         """加载人员数据"""
         try:
-            db = SessionLocal()
-            people = db.query(Person).order_by(Person.name).all()
+            # 使用 with 和 manager
+            with SessionLocal() as session:
+                people = person_manager.get_all_people(session)
 
-            self.person_table.setRowCount(len(people))
-            for row, person in enumerate(people):
-                self.person_table.setItem(row, 0, QTableWidgetItem(person.person_id))
-                self.person_table.setItem(row, 1, QTableWidgetItem(person.name))
-                self.person_table.setItem(row, 2, QTableWidgetItem(
-                    person.birthdate.strftime('%Y-%m-%d') if person.birthdate else ''
-                ))
-                self.person_table.setItem(row, 3, QTableWidgetItem(
-                    (person.bio[:100] + '...') if person.bio and len(person.bio) > 100 else (person.bio or '')
-                ))
-
-            db.close()
+                self.person_table.setRowCount(len(people))
+                for row, person in enumerate(people):
+                    self.person_table.setItem(row, 0, QTableWidgetItem(person.person_id))
+                    self.person_table.setItem(row, 1, QTableWidgetItem(person.name))
+                    self.person_table.setItem(row, 2, QTableWidgetItem(
+                        person.birthdate.strftime('%Y-%m-%d') if person.birthdate else ''
+                    ))
+                    self.person_table.setItem(row, 3, QTableWidgetItem(
+                        (person.bio[:100] + '...') if person.bio and len(person.bio) > 100 else (person.bio or '')
+                    ))
         except Exception as e:
             self.show_error(f"加载人员数据失败: {str(e)}")
 
@@ -74,13 +73,12 @@ class PersonManagementWidget(QFrame):
         if dialog.exec():
             try:
                 form_data = dialog.get_form_data()
-                db = SessionLocal()
 
-                person = Person(**form_data)
-                db.add(person)
-                db.commit()
+                # 使用 manager
+                with SessionLocal() as session:
+                    person_manager.add_person(session, form_data)
+                    session.commit()
 
-                db.close()
                 self.load_people()
                 self.show_success("人员添加成功")
 
@@ -106,27 +104,24 @@ class PersonManagementWidget(QFrame):
 
         if result:
             try:
-                db = SessionLocal()
-                person = db.query(Person).filter(Person.person_id == person_id).first()
-                if person:
-                    db.delete(person)
-                    db.commit()
-
-                db.close()
-                self.load_people()
-                self.show_success("人员删除成功")
+                #  使用 manager
+                with SessionLocal() as session:
+                    success = person_manager.delete_person(session, person_id)
+                    if success:
+                        session.commit()
+                        self.load_people()
+                        self.show_success("人员删除成功")
+                    else:
+                        self.show_error("人员不存在或已被删除")
 
             except Exception as e:
                 self.show_error(f"删除人员失败: {str(e)}")
 
     def show_success(self, message):
-        """显示成功信息"""
         InfoBar.success('成功', message, parent=self, duration=2000, position=InfoBarPosition.TOP)
 
     def show_warning(self, message):
-        """显示警告信息"""
         InfoBar.warning('警告', message, parent=self, duration=3000, position=InfoBarPosition.TOP)
 
     def show_error(self, message):
-        """显示错误信息"""
         InfoBar.error('错误', message, parent=self, duration=4000, position=InfoBarPosition.TOP)

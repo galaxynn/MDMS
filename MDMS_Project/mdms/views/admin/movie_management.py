@@ -1,13 +1,13 @@
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem
-from PySide6.QtWidgets import QHeaderView
+from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem, QHeaderView
 from qfluentwidgets import (
     PrimaryPushButton, TableWidget, MessageBox, InfoBar,
     InfoBarPosition
 )
 
-from mdms.database.models import Movie
+# 引入数据库会话
 from mdms.database.session import SessionLocal
+#  引入 MovieManager
+from mdms.common.movie_manager import movie_manager
 from mdms.views.admin.movie_form_dialog import MovieFormDialog
 
 
@@ -21,7 +21,7 @@ class MovieManagementWidget(QFrame):
         self.load_movies()
 
     def setup_ui(self):
-        """设置界面"""
+        """设置界面 (保持不变)"""
         layout = QVBoxLayout(self)
 
         # 按钮栏
@@ -51,25 +51,25 @@ class MovieManagementWidget(QFrame):
     def load_movies(self):
         """加载电影数据"""
         try:
-            db = SessionLocal()
-            movies = db.query(Movie).order_by(Movie.title).all()
+            # 使用 with 语法自动管理 session 关闭
+            with SessionLocal() as session:
+                # 调用 manager 获取数据
+                movies = movie_manager.get_all_movies(session)
 
-            self.movie_table.setRowCount(len(movies))
-            for row, movie in enumerate(movies):
-                self.movie_table.setItem(row, 0, QTableWidgetItem(movie.movie_id))
-                self.movie_table.setItem(row, 1, QTableWidgetItem(movie.title))
-                self.movie_table.setItem(row, 2, QTableWidgetItem(
-                    movie.release_date.strftime('%Y-%m-%d') if movie.release_date else ''
-                ))
-                self.movie_table.setItem(row, 3, QTableWidgetItem(
-                    str(movie.runtime_minutes) if movie.runtime_minutes else ''
-                ))
-                self.movie_table.setItem(row, 4, QTableWidgetItem(movie.country or ''))
-                self.movie_table.setItem(row, 5, QTableWidgetItem(
-                    str(movie.average_rating) if movie.average_rating else '0.00'
-                ))
-
-            db.close()
+                self.movie_table.setRowCount(len(movies))
+                for row, movie in enumerate(movies):
+                    self.movie_table.setItem(row, 0, QTableWidgetItem(movie.movie_id))
+                    self.movie_table.setItem(row, 1, QTableWidgetItem(movie.title))
+                    self.movie_table.setItem(row, 2, QTableWidgetItem(
+                        movie.release_date.strftime('%Y-%m-%d') if movie.release_date else ''
+                    ))
+                    self.movie_table.setItem(row, 3, QTableWidgetItem(
+                        str(movie.runtime_minutes) if movie.runtime_minutes else ''
+                    ))
+                    self.movie_table.setItem(row, 4, QTableWidgetItem(movie.country or ''))
+                    self.movie_table.setItem(row, 5, QTableWidgetItem(
+                        str(movie.average_rating) if movie.average_rating else '0.00'
+                    ))
         except Exception as e:
             self.show_error(f"加载电影数据失败: {str(e)}")
 
@@ -79,13 +79,12 @@ class MovieManagementWidget(QFrame):
         if dialog.exec():
             try:
                 form_data = dialog.get_form_data()
-                db = SessionLocal()
 
-                movie = Movie(**form_data)
-                db.add(movie)
-                db.commit()
+                # 使用 manager 添加
+                with SessionLocal() as session:
+                    movie_manager.add_movie(session, form_data)
+                    session.commit()  # 确认提交事务
 
-                db.close()
                 self.load_movies()
                 self.show_success("电影添加成功")
 
@@ -111,27 +110,24 @@ class MovieManagementWidget(QFrame):
 
         if result:
             try:
-                db = SessionLocal()
-                movie = db.query(Movie).filter(Movie.movie_id == movie_id).first()
-                if movie:
-                    db.delete(movie)
-                    db.commit()
-
-                db.close()
-                self.load_movies()
-                self.show_success("电影删除成功")
+                # 使用 manager 删除
+                with SessionLocal() as session:
+                    success = movie_manager.delete_movie(session, movie_id)
+                    if success:
+                        session.commit()
+                        self.load_movies()
+                        self.show_success("电影删除成功")
+                    else:
+                        self.show_error("删除失败：电影可能已被删除")
 
             except Exception as e:
                 self.show_error(f"删除电影失败: {str(e)}")
 
     def show_success(self, message):
-        """显示成功信息"""
         InfoBar.success('成功', message, parent=self, duration=2000, position=InfoBarPosition.TOP)
 
     def show_warning(self, message):
-        """显示警告信息"""
         InfoBar.warning('警告', message, parent=self, duration=3000, position=InfoBarPosition.TOP)
 
     def show_error(self, message):
-        """显示错误信息"""
         InfoBar.error('错误', message, parent=self, duration=4000, position=InfoBarPosition.TOP)

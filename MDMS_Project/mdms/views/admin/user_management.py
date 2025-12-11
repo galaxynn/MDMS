@@ -1,12 +1,13 @@
-from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem
-from PySide6.QtWidgets import QHeaderView
+from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem, QHeaderView
 from qfluentwidgets import (
     PrimaryPushButton, TableWidget, MessageBox, InfoBar,
     InfoBarPosition
 )
 
-from mdms.database.models import User
 from mdms.database.session import SessionLocal
+# 引入 UserAdminManager
+from mdms.common.user_admin_manager import user_admin_manager
+# 保留 user_manager 用于判断“当前登录用户”，防止自己删自己
 from mdms.common.user_manager import user_manager
 
 
@@ -20,7 +21,7 @@ class UserManagementWidget(QFrame):
         self.load_users()
 
     def setup_ui(self):
-        """设置界面"""
+        """设置界面 (保持不变)"""
         layout = QVBoxLayout(self)
 
         # 按钮栏
@@ -50,20 +51,19 @@ class UserManagementWidget(QFrame):
     def load_users(self):
         """加载用户数据"""
         try:
-            db = SessionLocal()
-            users = db.query(User).order_by(User.created_at).all()
+            # 使用 with 和 manager
+            with SessionLocal() as session:
+                users = user_admin_manager.get_all_users(session)
 
-            self.user_table.setRowCount(len(users))
-            for row, user in enumerate(users):
-                self.user_table.setItem(row, 0, QTableWidgetItem(user.user_id))
-                self.user_table.setItem(row, 1, QTableWidgetItem(user.username))
-                self.user_table.setItem(row, 2, QTableWidgetItem(user.email))
-                self.user_table.setItem(row, 3, QTableWidgetItem(user.role))
-                self.user_table.setItem(row, 4, QTableWidgetItem(
-                    user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else ''
-                ))
-
-            db.close()
+                self.user_table.setRowCount(len(users))
+                for row, user in enumerate(users):
+                    self.user_table.setItem(row, 0, QTableWidgetItem(user.user_id))
+                    self.user_table.setItem(row, 1, QTableWidgetItem(user.username))
+                    self.user_table.setItem(row, 2, QTableWidgetItem(user.email))
+                    self.user_table.setItem(row, 3, QTableWidgetItem(user.role))
+                    self.user_table.setItem(row, 4, QTableWidgetItem(
+                        user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else ''
+                    ))
         except Exception as e:
             self.show_error(f"加载用户数据失败: {str(e)}")
 
@@ -77,7 +77,7 @@ class UserManagementWidget(QFrame):
         user_id = self.user_table.item(current_row, 0).text()
         username = self.user_table.item(current_row, 1).text()
 
-        # 防止重置当前登录用户的密码
+        # 防止重置当前登录用户的密码 (使用 user_manager 获取当前用户ID)
         if user_id == user_manager.current_user.user_id:
             self.show_warning("不能重置当前登录用户的密码")
             return
@@ -91,13 +91,11 @@ class UserManagementWidget(QFrame):
 
         if result:
             try:
-                db = SessionLocal()
-                user = db.query(User).filter(User.user_id == user_id).first()
-                if user:
-                    user.set_password("123456")  # 默认密码
-                    db.commit()
+                # 使用 manager
+                with SessionLocal() as session:
+                    user_admin_manager.reset_password(session, user_id, "123456")
+                    session.commit()
 
-                db.close()
                 self.show_success(f"用户 {username} 的密码已重置为 123456")
 
             except Exception as e:
@@ -127,27 +125,24 @@ class UserManagementWidget(QFrame):
 
         if result:
             try:
-                db = SessionLocal()
-                user = db.query(User).filter(User.user_id == user_id).first()
-                if user:
-                    db.delete(user)
-                    db.commit()
-
-                db.close()
-                self.load_users()
-                self.show_success("用户删除成功")
+                # 使用 manager
+                with SessionLocal() as session:
+                    success = user_admin_manager.delete_user(session, user_id)
+                    if success:
+                        session.commit()
+                        self.load_users()
+                        self.show_success("用户删除成功")
+                    else:
+                        self.show_error("删除失败：用户不存在")
 
             except Exception as e:
                 self.show_error(f"删除用户失败: {str(e)}")
 
     def show_success(self, message):
-        """显示成功信息"""
         InfoBar.success('成功', message, parent=self, duration=2000, position=InfoBarPosition.TOP)
 
     def show_warning(self, message):
-        """显示警告信息"""
         InfoBar.warning('警告', message, parent=self, duration=3000, position=InfoBarPosition.TOP)
 
     def show_error(self, message):
-        """显示错误信息"""
         InfoBar.error('错误', message, parent=self, duration=4000, position=InfoBarPosition.TOP)
