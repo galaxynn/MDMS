@@ -40,7 +40,7 @@ class LoginWindow(Window, Ui_Form):
 
         self.image_label.setScaledContents(False)
         self.setWindowTitle('MDMS - Login')
-        self.setWindowIcon(QIcon(":/images/logo.png"))
+        self.setWindowIcon(QIcon(":/qfluentwidgets/images/logo.png"))
         self.resize(1000, 650)
 
         self.windowEffect.setMicaEffect(self.winId(), isDarkMode=isDarkTheme())

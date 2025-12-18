@@ -5,7 +5,6 @@ from qfluentwidgets import FluentTranslator
 
 from mdms.views.login.login_window import LoginWindow
 from mdms.views.main_window import MainWindow
-from mdms.common.user_manager import user_manager
 
 
 class ApplicationController:

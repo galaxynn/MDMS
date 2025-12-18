@@ -29,7 +29,7 @@ class ReviewManager:
         session.flush()
 
         # 4. 触发统计更新 - 修复：这里调用了错误的方法名
-        self.update_movie_stats(session, movie_id)  # 原来是 self._update_movie_stats
+        self.update_movie_status(session, movie_id)  # 原来是 self._update_movie_stats
 
         return new_review
 
@@ -53,7 +53,7 @@ class ReviewManager:
         session.flush()
 
         # 触发统计更新
-        self.update_movie_stats(session, movie_id)
+        self.update_movie_status(session, movie_id)
 
         return review
 
@@ -74,13 +74,14 @@ class ReviewManager:
         session.flush()
 
         # 触发统计更新
-        self.update_movie_stats(session, movie_id)
+        self.update_movie_status(session, movie_id)
 
-    def update_movie_stats(self, session, movie_id):
+    def update_movie_status(self, session, movie_id):
         """
-        [核心逻辑] 重新计算并更新电影的平均分和评分人数
+        重新计算并更新电影的平均分和评分人数
         类似于数据库触发器
         """
+
         # 使用 SQL 聚合函数直接计算，性能最高
         stats = session.query(
             func.count(Review.rating).label('count'),
@@ -104,7 +105,6 @@ class ReviewManager:
             movie.rating_count = count
             movie.average_rating = average
             # 注意：这里不需要 commit，由调用者统一 commit
-
 
 # 实例化一个单例对象方便调用
 review_manager = ReviewManager()
