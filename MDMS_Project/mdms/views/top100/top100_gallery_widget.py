@@ -1,7 +1,8 @@
 import sys
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QApplication, QWidget, QHBoxLayout
-from qfluentwidgets import SubtitleLabel, setFont, FlowLayout, ScrollArea, SmoothMode, BodyLabel, CaptionLabel
+from qfluentwidgets import (SubtitleLabel, setFont, FlowLayout, ScrollArea, SmoothMode,
+                            BodyLabel, CaptionLabel, TransparentToolButton, FluentIcon)
 from sqlalchemy import and_
 
 from mdms.database.session import SessionLocal
@@ -17,10 +18,10 @@ class Top100MovieCard(QFrame):
     def __init__(self, movie_id: str, iconPath: str, name: str, rank: int, rating: float, parent=None):
         super().__init__(parent)
         self.movie_id = movie_id
-        self.setFixedSize(160, 220)  # 稍微增加高度以容纳更多内容
+        self.setFixedSize(160, 240)
         self.setCursor(Qt.PointingHandCursor)
 
-        # 设置样式
+        # 设置样式 (保持不变)
         self.setObjectName("movieCard")
         self.setStyleSheet("""
             #movieCard {
@@ -36,7 +37,7 @@ class Top100MovieCard(QFrame):
         if not iconPath:
             iconPath = ":/qfluentwidgets/images/logo.png"
 
-        # 1. 排名标签
+        # 1. 排名标签 (保持不变)
         from qfluentwidgets import CaptionLabel
         self.rankLabel = CaptionLabel(f"#{rank}", self)
         self.rankLabel.setAlignment(Qt.AlignCenter)
@@ -46,36 +47,48 @@ class Top100MovieCard(QFrame):
             border-radius: 10px;
             padding: 2px 6px;
             font-weight: bold;
-            margin: 5px;
+            margin: 5px 5px 0px 5px; /* 稍微调整边距 */
         """)
 
         # 2. 封面图片
         from qfluentwidgets import ImageLabel
         self.iconWidget = ImageLabel(iconPath, self)
-        self.iconWidget.scaledToHeight(120)
+        # 明确固定图片大小
+        # 卡片宽度160 - 左右边距各8 = 144宽度。高度固定为120。
+        self.iconWidget.setFixedSize(144, 120)
+        # 确保图片内容填充在这个固定区域内
+        self.iconWidget.setScaledContents(True)
         self.iconWidget.setBorderRadius(8, 8, 8, 8)
 
         # 3. 电影名称
         self.titleLabel = CaptionLabel(name, self)
         self.titleLabel.setAlignment(Qt.AlignCenter)
+        # 允许换行
         self.titleLabel.setWordWrap(True)
-        self.titleLabel.setMaximumHeight(40)
+        # 移除硬性的最大高度限制，让布局决定高度
+        # self.titleLabel.setMaximumHeight(40)
         self.titleLabel.setToolTip(name)
+        # 可以设置一个最小高度确保至少显示一行
+        self.titleLabel.setMinimumHeight(20)
 
-        # 4. 评分标签
+        # 4. 评分标签 (保持不变)
         self.ratingLabel = CaptionLabel(f"⭐ {rating:.1f}", self)
         self.ratingLabel.setAlignment(Qt.AlignCenter)
-        self.ratingLabel.setStyleSheet("color: #ff6b00; font-weight: bold;")
+        self.ratingLabel.setStyleSheet("color: #ff6b00; font-weight: bold; margin-bottom: 5px;")
 
         # 5. 布局管理
         self.vBoxLayout = QVBoxLayout(self)
         self.vBoxLayout.setAlignment(Qt.AlignCenter)
         self.vBoxLayout.setContentsMargins(8, 8, 8, 8)
-        self.vBoxLayout.setSpacing(5)
+        # 稍微减小间距
+        self.vBoxLayout.setSpacing(4)
 
+        # 设置拉伸因子
+        # 第二个参数是拉伸因子。设为 0 表示固定高度，不参与拉伸。
+        # 将 titleLabel 的拉伸因子设为 1，表示它占据剩余所有空间。
         self.vBoxLayout.addWidget(self.rankLabel, 0, Qt.AlignRight)
         self.vBoxLayout.addWidget(self.iconWidget, 0, Qt.AlignCenter)
-        self.vBoxLayout.addWidget(self.titleLabel, 0, Qt.AlignCenter)
+        self.vBoxLayout.addWidget(self.titleLabel, 1, Qt.AlignCenter) # stretch=1
         self.vBoxLayout.addWidget(self.ratingLabel, 0, Qt.AlignCenter)
 
     def mouseReleaseEvent(self, e):
@@ -110,10 +123,26 @@ class Top100GalleryWidget(QFrame):
 
         # === 头部 ===
         self.headerLayout = QHBoxLayout()
+
+        # 标题
         self.titleLabel = SubtitleLabel(text, self)
         setFont(self.titleLabel, 24)
         self.headerLayout.addWidget(self.titleLabel)
+
+        # 弹簧 (将刷新按钮推到最右侧)
         self.headerLayout.addStretch(1)
+
+        # 增刷新按钮
+        # 使用透明工具按钮，图标为 SYNC (刷新/同步图标)
+        self.refreshBtn = TransparentToolButton(FluentIcon.SYNC, self)
+        self.refreshBtn.setToolTip("刷新榜单")
+        self.refreshBtn.setFixedSize(32, 32)  # 设置合适的大小
+        self.refreshBtn.setIconSize(QSize(16, 16))  # 设置图标大小
+
+        # 3. 连接信号槽：点击时调用 load_top100_data
+        self.refreshBtn.clicked.connect(self.on_refresh_clicked)
+
+        self.headerLayout.addWidget(self.refreshBtn)
 
         # === 描述信息 ===
         self.descriptionLabel = BodyLabel("根据电影评分排序的前100部高评分电影", self)
@@ -141,6 +170,14 @@ class Top100GalleryWidget(QFrame):
 
         self.scrollArea.setWidget(self.scrollWidget)
         self.mainLayout.addWidget(self.scrollArea)
+
+    def on_refresh_clicked(self):
+        """处理刷新点击，可以添加一些额外的UI反馈逻辑"""
+        print("正在刷新TOP100榜单...")
+        # 这里你可以选择先清空列表，或者直接重新加载
+        # self.cards.clear()
+        # 重新加载数据
+        self.load_top100_data()
 
     def load_top100_data(self):
         """加载TOP100电影数据"""
@@ -172,12 +209,29 @@ class Top100GalleryWidget(QFrame):
 
     def update_gallery(self, movies):
         """清除旧卡片并显示新卡片"""
-        # 1. 清空 FlowLayout
-        while self.flowLayout.count():
-            item = self.flowLayout.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
+
+        # 1. 清空 FlowLayout (修复版)
+        # qfluentwidgets 的 FlowLayout.takeAt() 有时直接返回 Widget，而不是 QLayoutItem
+        if self.flowLayout:
+            # 如果组件支持 removeAllWidgets (新版特性)，优先使用
+            if hasattr(self.flowLayout, 'removeAllWidgets'):
+                self.flowLayout.removeAllWidgets()
+            else:
+                # 兼容性手动清空
+                while self.flowLayout.count():
+                    item = self.flowLayout.takeAt(0)
+                    if item is None:
+                        break
+
+                    # 关键修改：判断取出来的是 Widget 本身还是 LayoutItem
+                    if isinstance(item, QWidget):
+                        # 如果直接是 Widget (Top100MovieCard)
+                        item.deleteLater()
+                    elif hasattr(item, 'widget'):
+                        # 如果是 QLayoutItem 包装器
+                        widget = item.widget()
+                        if widget:
+                            widget.deleteLater()
 
         self.cards.clear()
 
@@ -190,7 +244,7 @@ class Top100GalleryWidget(QFrame):
             return
 
         for index, movie in enumerate(movies):
-            # 创建电影卡片，使用专门的TOP100卡片组件
+            # 创建电影卡片
             card = Top100MovieCard(
                 movie_id=movie.movie_id,
                 iconPath=movie.poster_url,
@@ -208,7 +262,6 @@ class Top100GalleryWidget(QFrame):
         """处理卡片点击事件"""
         print(f"TOP100点击了电影 ID: {movie_id}")
         self.requestOpenDetail.emit(movie_id)
-
 
 if __name__ == '__main__':
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)

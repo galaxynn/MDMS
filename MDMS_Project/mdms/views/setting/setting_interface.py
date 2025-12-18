@@ -20,8 +20,7 @@ from mdms.common.user_manager import user_manager
 
 class SettingInterface(SmoothScrollArea):
     """
-    设置界面 - 美化版
-    采用 Windows 11 标准设置页风格
+    设置界面
     """
 
     # 定义退出登录信号

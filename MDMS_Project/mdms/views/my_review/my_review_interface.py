@@ -109,8 +109,6 @@ class MyReviewInterface(QFrame):
 
         with SessionLocal() as session:
             # 查询 Review 并关联 Movie 表获取电影标题
-            # 假设 Review 模型有 movie 关系属性，或者手动 join
-            # 这里假设：Review.movie 是 relationship，或者 join查询
             reviews = session.query(Review).filter(Review.user_id == user_id).order_by(Review.created_at.desc()).all()
 
             for review in reviews:
