@@ -197,14 +197,15 @@ class MovieGalleryWidget(QFrame):
             self.paginator.set_current_page(page)
 
             # 计算分页偏移量执行物理分页查询
+            # limit 是每页的记录数，offset 是跳过的记录数
             limit = self.paginator.get_page_size()
             offset = (page - 1) * limit
-            # 查询当前页数据，默认按模型定义排序（如 ID 或发布日期）
+            # 我们跳过 offset 条记录，获取 limit 条记录
             movies = query.offset(offset).limit(limit).all()
 
             # 刷新画廊展示
             self.update_gallery(movies)
-            # 翻页后重置滚动条位置到顶部，提升用户体验
+            # 翻页后重置滚动条位置到顶部，来提升用户体验
             self.scrollArea.verticalScrollBar().setValue(0)
 
         except Exception as e:

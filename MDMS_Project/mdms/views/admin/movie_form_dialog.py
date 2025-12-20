@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QVBoxLayout, QWidget
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QDate
 from qfluentwidgets import (
     MessageBoxBase, SubtitleLabel, LineEdit, BodyLabel,
     InfoBarIcon, Flyout, FlyoutAnimationType, DateEdit,
@@ -9,15 +9,15 @@ from datetime import datetime
 
 
 class MovieFormDialog(MessageBoxBase):
-    """新增/编辑电影表单对话框 - 类似注册对话框样式"""
+    """新增/编辑电影表单对话框"""
 
-    def __init__(self, parent=None, movie=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.movie = movie
-        self.form_data = None
+        self.form_data = {}
+        self.is_edit_mode = False
 
         # 设置对话框标题
-        self.titleLabel = SubtitleLabel('新增电影' if not movie else '编辑电影', self)
+        self.titleLabel = SubtitleLabel('新增电影', self)
 
         # 创建带滚动的表单区域
         self.setup_scroll_form()
@@ -26,12 +26,11 @@ class MovieFormDialog(MessageBoxBase):
         self.yesButton.setText('保存')
         self.cancelButton.setText('取消')
 
-        # 设置对话框尺寸 - 固定大小，不可调整
-        self.widget.setFixedSize(500, 550)
+        # 设置对话框尺寸 - 固定大小
+        self.widget.setFixedSize(500, 600)
 
     def setup_scroll_form(self):
         """设置带滚动的表单区域"""
-        # 创建滚动区域
         scroll_area = ScrollArea()
         scroll_widget = QWidget()
         self.scroll_layout = QVBoxLayout(scroll_widget)
@@ -39,7 +38,8 @@ class MovieFormDialog(MessageBoxBase):
         # 设置滚动区域属性
         scroll_area.setWidget(scroll_widget)
         scroll_area.setWidgetResizable(True)
-        scroll_area.setFixedHeight(400)  # 控制滚动区域高度
+        # 设置滚动区域高度，留出空间给标题和底部按钮
+        scroll_area.setFixedHeight(450)
 
         # 创建表单控件
         self.setup_form_controls()
@@ -50,7 +50,6 @@ class MovieFormDialog(MessageBoxBase):
 
     def setup_form_controls(self):
         """设置表单控件"""
-        # 增加整体间距
         self.scroll_layout.setSpacing(12)
         self.scroll_layout.setContentsMargins(5, 5, 5, 5)
 
@@ -59,27 +58,21 @@ class MovieFormDialog(MessageBoxBase):
         self.titleLineEdit = LineEdit()
         self.titleLineEdit.setPlaceholderText('请输入电影标题')
         self.titleLineEdit.setClearButtonEnabled(True)
-        if self.movie:
-            self.titleLineEdit.setText(self.movie.title)
         self.scroll_layout.addWidget(self.titleLineEdit)
 
         # 上映日期
         self.scroll_layout.addWidget(BodyLabel("上映日期"))
         self.releaseDateEdit = DateEdit()
         self.releaseDateEdit.setDisplayFormat('yyyy-MM-dd')
-        if self.movie and self.movie.release_date:
-            self.releaseDateEdit.setDate(self.movie.release_date)
-        else:
-            self.releaseDateEdit.setDate(datetime.now().date())
+        self.releaseDateEdit.setDate(datetime.now().date())  # 默认为今天
         self.scroll_layout.addWidget(self.releaseDateEdit)
 
         # 片长（分钟）
         self.scroll_layout.addWidget(BodyLabel("片长（分钟）"))
         self.runtimeSpinBox = SpinBox()
-        self.runtimeSpinBox.setRange(1, 500)
+        self.runtimeSpinBox.setRange(1, 999)
         self.runtimeSpinBox.setSuffix(' 分钟')
-        if self.movie:
-            self.runtimeSpinBox.setValue(self.movie.runtime_minutes or 120)
+        self.runtimeSpinBox.setValue(120)  # 默认值
         self.scroll_layout.addWidget(self.runtimeSpinBox)
 
         # 国家
@@ -87,8 +80,6 @@ class MovieFormDialog(MessageBoxBase):
         self.countryLineEdit = LineEdit()
         self.countryLineEdit.setPlaceholderText('请输入国家（可选）')
         self.countryLineEdit.setClearButtonEnabled(True)
-        if self.movie:
-            self.countryLineEdit.setText(self.movie.country or '')
         self.scroll_layout.addWidget(self.countryLineEdit)
 
         # 语言
@@ -96,9 +87,14 @@ class MovieFormDialog(MessageBoxBase):
         self.languageLineEdit = LineEdit()
         self.languageLineEdit.setPlaceholderText('请输入语言（可选）')
         self.languageLineEdit.setClearButtonEnabled(True)
-        if self.movie:
-            self.languageLineEdit.setText(self.movie.language or '')
         self.scroll_layout.addWidget(self.languageLineEdit)
+
+        # 平均评分 (通常由计算得出，但如果需要手动修正可解开注释)
+        # self.scroll_layout.addWidget(BodyLabel("当前评分"))
+        # self.ratingLineEdit = LineEdit()
+        # self.ratingLineEdit.setPlaceholderText('0.00')
+        # self.ratingLineEdit.setEnabled(False) # 设为只读
+        # self.scroll_layout.addWidget(self.ratingLineEdit)
 
         # 剧情简介
         self.scroll_layout.addWidget(BodyLabel("剧情简介"))
@@ -106,8 +102,6 @@ class MovieFormDialog(MessageBoxBase):
         self.synopsisTextEdit.setPlaceholderText('请输入剧情简介（可选）')
         self.synopsisTextEdit.setMinimumHeight(80)
         self.synopsisTextEdit.setMaximumHeight(120)
-        if self.movie:
-            self.synopsisTextEdit.setText(self.movie.synopsis or '')
         self.scroll_layout.addWidget(self.synopsisTextEdit)
 
         # 海报URL
@@ -115,15 +109,42 @@ class MovieFormDialog(MessageBoxBase):
         self.posterUrlLineEdit = LineEdit()
         self.posterUrlLineEdit.setPlaceholderText('请输入海报URL（可选）')
         self.posterUrlLineEdit.setClearButtonEnabled(True)
-        if self.movie:
-            self.posterUrlLineEdit.setText(self.movie.poster_url or '')
         self.scroll_layout.addWidget(self.posterUrlLineEdit)
 
-        # 添加弹性空间，使内容顶部对齐
+        # 添加弹性空间
         self.scroll_layout.addStretch(1)
 
-        # 绑定回车键事件
+        # 绑定回车键
         self.posterUrlLineEdit.returnPressed.connect(self.yesButton.click)
+
+    def set_form_data(self, data: dict):
+        """
+        设置表单初始数据（用于编辑模式）
+        :param data: 包含电影信息的字典 (通常来自 TableWidget)
+        """
+        self.is_edit_mode = True
+        self.titleLabel.setText('编辑电影')
+
+        # 文本字段直接赋值
+        self.titleLineEdit.setText(data.get('title', ''))
+        self.countryLineEdit.setText(data.get('country', ''))
+        self.languageLineEdit.setText(data.get('language', ''))
+        self.synopsisTextEdit.setText(data.get('synopsis', ''))
+        self.posterUrlLineEdit.setText(data.get('poster_url', ''))
+
+        # 数值处理
+        try:
+            runtime = int(float(data.get('runtime_minutes', '120')))
+            self.runtimeSpinBox.setValue(runtime)
+        except (ValueError, TypeError):
+            self.runtimeSpinBox.setValue(120)
+
+        # 日期处理 (从字符串 'YYYY-MM-DD' 转回 QDate)
+        date_str = data.get('release_date', '')
+        if date_str:
+            qdate = QDate.fromString(date_str, 'yyyy-MM-dd')
+            if qdate.isValid():
+                self.releaseDateEdit.setDate(qdate)
 
     def validate(self):
         """验证表单数据"""
@@ -148,7 +169,7 @@ class MovieFormDialog(MessageBoxBase):
         return True
 
     def get_form_data(self):
-        """获取表单数据（兼容原有代码）"""
+        """获取验证后的表单数据"""
         return self.form_data
 
     def show_error(self, text, target):
