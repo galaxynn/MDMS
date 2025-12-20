@@ -1,5 +1,6 @@
 from mdms.database.models import Person
 
+
 class PersonManager:
     """
     人员数据管理服务类
@@ -22,6 +23,25 @@ class PersonManager:
         session.flush()
         return new_person
 
+    def update_person(self, session, person_id, person_data: dict):
+        """
+        更新人员信息
+        :param person_id: 人员 ID
+        :param person_data: 包含需要修改的字段的字典
+        """
+        person = session.query(Person).filter(Person.person_id == person_id).first()
+        if not person:
+            return None
+
+        # 遍历字典更新属性
+        for key, value in person_data.items():
+            # 简单的安全检查，确保只更新模型中存在的属性
+            if hasattr(person, key):
+                setattr(person, key, value)
+
+        session.flush()
+        return person
+
     def delete_person(self, session, person_id):
         """
         根据 ID 删除人员
@@ -32,6 +52,7 @@ class PersonManager:
             session.flush()
             return True
         return False
+
 
 # 单例实例
 person_manager = PersonManager()
